@@ -12,3 +12,8 @@ export const getCategories = async (skip = 0, take = 20) => {
   ]);
   return { categories, total };
 };
+
+// Create category - POST /api/v1/categories
+export const createCategory = async (name: string, slug: string) => {
+  return prisma.category.create({ data: { name, slug } });
+};
