@@ -13,6 +13,13 @@ enum Role {
   ADMIN
 }
 
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+  COMPLETED
+}
+
 model User {
   id        String   @id @default(uuid())
   name      String
@@ -26,6 +33,8 @@ model User {
   image         String?
   sessions      Session[]
   accounts      Account[]
+
+  events Event[] @relation("OrganizerEvents")
 
   @@map("users")
 }
@@ -96,5 +105,33 @@ model Category {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  events Event[]
+
   @@map("categories")
+}
+
+model Event {
+  id          String      @id @default(uuid())
+  title       String
+  description String
+  price       Decimal     @db.Decimal(10, 2)
+  capacity    Int
+  bookedSeats Int         @default(0)
+  startDate   DateTime
+  location    String?
+  status      EventStatus @default(DRAFT)
+  isDeleted   Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  organizerId String
+  organizer   User   @relation("OrganizerEvents", fields: [organizerId], references: [id])
+
+  @@index([categoryId])
+  @@index([organizerId])
+  @@index([status])
+  @@map("events")
 }
