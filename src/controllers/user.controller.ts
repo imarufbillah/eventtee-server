@@ -4,9 +4,14 @@ import * as userService from "../services/user.service.js";
 
 type UpdateUserBody = Pick<Prisma.UserUpdateInput, "name" | "image">;
 
-export const getUsers = async (_req: Request, res: Response): Promise<void> => {
+// Get users - GET /api/v1/users
+export const getUsers = async (req: Request, res: Response): Promise<void> => {
   try {
-    const users = await userService.getUsers();
+    const page = Math.max(1, Number(req.query["page"]) || 1);
+    const limit = Math.min(100, Math.max(1, Number(req.query["limit"]) || 20));
+    const skip = (page - 1) * limit;
+
+    const users = await userService.getUsers(skip, limit);
 
     res.status(200).json({
       success: true,
@@ -14,7 +19,7 @@ export const getUsers = async (_req: Request, res: Response): Promise<void> => {
       data: users,
     });
   } catch (error) {
-    console.log("Failed to get users.", error);
+    console.error("Failed to get users:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch users",
@@ -22,7 +27,7 @@ export const getUsers = async (_req: Request, res: Response): Promise<void> => {
   }
 };
 
-// Update user - PATCH /api/users/:id
+// Update user - PATCH /api/v1/users/:id
 export const updateUser = async (
   req: Request<{ id: string }, unknown, UpdateUserBody>,
   res: Response,
