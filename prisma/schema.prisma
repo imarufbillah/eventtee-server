@@ -42,6 +42,7 @@ model User {
 
   events   Event[]   @relation("OrganizerEvents")
   bookings Booking[]
+  reviews  Review[]
 
   @@map("users")
 }
@@ -137,6 +138,7 @@ model Event {
   organizerId String
   organizer   User      @relation("OrganizerEvents", fields: [organizerId], references: [id])
   bookings    Booking[]
+  reviews     Review[]
 
   @@index([categoryId])
   @@index([organizerId])
@@ -162,4 +164,23 @@ model Booking {
   @@index([userId])
   @@index([eventId])
   @@map("bookings")
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  rating    Int
+  comment   String?
+  isDeleted Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id])
+
+  @@unique([userId, eventId])
+  @@index([eventId])
+  @@map("reviews")
 }
