@@ -171,3 +171,44 @@ export const restoreUser = async (
     });
   }
 };
+
+// Get current user profile - GET /api/v1/users/me
+export const getProfile = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        message: "Unauthorized: User ID not found in token",
+      });
+      return;
+    }
+
+    const user = await userService.getUserById(userId);
+
+    if (!user || user.isDeleted) {
+      res.status(404).json({
+        success: false,
+        message: "User profile not found or account disabled",
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Profile fetched successfully",
+      data: user,
+    });
+  } catch (error) {
+    console.error("Failed to get user profile:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch user profile",
+    });
+  }
+};
+

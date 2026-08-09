@@ -12,6 +12,11 @@ router.get(
   authorize("ADMIN"),
   userController.getActiveUsers,
 );
+router.get(
+  "/me",
+  authenticate,
+  userController.getProfile,
+);
 router.patch(
   "/:id",
   authenticate,

@@ -81,3 +81,22 @@ export const restoreUser = async (id: string): Promise<User> => {
     data: { isDeleted: false },
   });
 };
+
+// Get user by ID / Profile - GET /api/v1/users/me
+export const getUserById = async (id: string) => {
+  return prisma.user.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      image: true,
+      emailVerified: true,
+      isDeleted: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+};
+
