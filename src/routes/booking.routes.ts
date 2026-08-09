@@ -5,6 +5,7 @@ const router = Router();
 
 router.get("/", bookingController.getBookings);
 router.get("/active", bookingController.getActiveBookings);
+router.get("/user/:userId", bookingController.getBookingsByUser);
 router.post("/", bookingController.createBooking);
 router.patch("/cancel/:id", bookingController.cancelBooking);
 

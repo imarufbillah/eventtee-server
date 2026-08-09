@@ -59,3 +59,26 @@ export const cancelBooking = async (id: string) => {
     data: { status: "CANCELLED" },
   });
 };
+
+// Get bookings by user - GET /api/v1/bookings/user/:userId
+export const getBookingsByUser = async (skip = 0, take = 20) => {
+  const [bookings, total] = await Promise.all([
+    prisma.booking.findMany({
+      skip,
+      take,
+      select: {
+        id: true,
+        seats: true,
+        totalPrice: true,
+        status: true,
+        isDeleted: true,
+        userId: true,
+        eventId: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    }),
+    prisma.booking.count(),
+  ]);
+  return { bookings, total };
+};

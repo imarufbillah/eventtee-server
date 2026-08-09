@@ -101,3 +101,29 @@ export const cancelBooking = async (
     });
   }
 };
+
+// Get bookings by user - GET /api/v1/bookings/user/:userId
+export const getBookingsByUser = async (
+  req: Request<{ userId: string }>,
+  res: Response,
+): Promise<void> => {
+  try {
+    const page = Math.max(1, Number(req.query["page"]) || 1);
+    const limit = Math.min(100, Math.max(1, Number(req.query["limit"]) || 20));
+    const skip = (page - 1) * limit;
+
+    const bookings = await bookingService.getBookingsByUser(skip, limit);
+
+    res.status(200).json({
+      success: true,
+      message: "Bookings fetched successfully",
+      data: bookings,
+    });
+  } catch (error) {
+    console.error("Failed to get bookings:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch bookings",
+    });
+  }
+};
