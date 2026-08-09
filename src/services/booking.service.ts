@@ -172,9 +172,39 @@ export const getBookingsByUser = async (skip = 0, take = 20) => {
 };
 
 // Confirm booking - PATCH /api/v1/bookings/confirm/:id
-export const confirmBooking = async (id: string) => {
+export const confirmBooking = async (
+  bookingId: string,
+  userId: string,
+  userRole?: string,
+) => {
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: { event: true },
+  });
+
+  if (!booking || booking.isDeleted) {
+    throw new Prisma.PrismaClientKnownRequestError("Booking not found", {
+      code: "P2025",
+      clientVersion: Prisma.prismaVersion.client,
+    });
+  }
+
+  if (booking.event.organizerId !== userId && userRole !== "ADMIN") {
+    throw new Error(
+      "Forbidden: You can only confirm bookings for events you organize",
+    );
+  }
+
+  if (booking.status === "CANCELLED") {
+    throw new Error("Cannot confirm a cancelled booking");
+  }
+
+  if (booking.status === "CONFIRMED") {
+    throw new Error("Booking is already confirmed");
+  }
+
   return prisma.booking.update({
-    where: { id },
+    where: { id: bookingId },
     data: { status: "CONFIRMED" },
   });
 };
