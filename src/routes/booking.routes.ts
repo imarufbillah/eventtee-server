@@ -4,5 +4,6 @@ import * as bookingController from "../controllers/booking.controller.js";
 const router = Router();
 
 router.get("/", bookingController.getBookings);
+router.get("/active", bookingController.getActiveBookings);
 
 export default router;
