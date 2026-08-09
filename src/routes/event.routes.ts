@@ -1,5 +1,6 @@
 import { Router } from "express";
 import * as eventController from "../controllers/event.controller.js";
+import * as reviewController from "../controllers/review.controller.js";
 import { authenticate } from "../middlewares/auth.middleware.js";
 import authorize from "../middlewares/role.middleware.js";
 
@@ -18,6 +19,7 @@ router.get(
   authorize("ORGANIZER", "ADMIN"),
   eventController.getEventBookings,
 );
+router.get("/:eventId/reviews", reviewController.getReviewsByEvent);
 router.get("/:id", eventController.getEventById);
 router.post(
   "/",

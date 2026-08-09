@@ -394,3 +394,42 @@ export const restoreReview = async (
     });
   }
 };
+
+// Get reviews for an event - GET /api/v1/events/:eventId/reviews
+export const getReviewsByEvent = async (
+  req: Request<{ eventId: string }>,
+  res: Response,
+): Promise<void> => {
+  const { eventId } = req.params;
+
+  try {
+    const page = Math.max(1, Number(req.query["page"]) || 1);
+    const limit = Math.min(100, Math.max(1, Number(req.query["limit"]) || 20));
+    const skip = (page - 1) * limit;
+
+    const data = await reviewService.getReviewsByEvent(eventId, skip, limit);
+
+    res.status(200).json({
+      success: true,
+      message: "Event reviews fetched successfully",
+      data,
+    });
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      res.status(404).json({
+        success: false,
+        message: "Event not found",
+      });
+      return;
+    }
+
+    console.error("Failed to get event reviews:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch event reviews",
+    });
+  }
+};

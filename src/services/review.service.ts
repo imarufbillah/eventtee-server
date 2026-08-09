@@ -193,3 +193,71 @@ export const restoreReview = async (
     data: { isDeleted: false },
   });
 };
+
+// Get reviews for an event - GET /api/v1/events/:eventId/reviews
+export const getReviewsByEvent = async (
+  eventId: string,
+  skip = 0,
+  take = 20,
+) => {
+  const event = await prisma.event.findUnique({
+    where: { id: eventId },
+    select: { id: true, title: true, isDeleted: true },
+  });
+
+  if (!event || event.isDeleted) {
+    throw new Prisma.PrismaClientKnownRequestError("Event not found", {
+      code: "P2025",
+      clientVersion: Prisma.prismaVersion.client,
+    });
+  }
+
+  const where: Prisma.ReviewWhereInput = {
+    eventId,
+    isDeleted: false,
+  };
+
+  const [reviews, total, aggregate] = await Promise.all([
+    prisma.review.findMany({
+      where,
+      skip,
+      take,
+      select: {
+        id: true,
+        rating: true,
+        comment: true,
+        createdAt: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    }),
+    prisma.review.count({ where }),
+    prisma.review.aggregate({
+      where,
+      _avg: {
+        rating: true,
+      },
+    }),
+  ]);
+
+  const rawAvg = aggregate._avg.rating ?? 0;
+  const averageRating = Number(rawAvg.toFixed(1));
+
+  return {
+    event: {
+      id: event.id,
+      title: event.title,
+    },
+    averageRating,
+    totalReviews: total,
+    reviews,
+  };
+};
