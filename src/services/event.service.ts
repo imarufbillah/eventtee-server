@@ -177,3 +177,66 @@ export const restoreEvent = async (
     data: { isDeleted: false },
   });
 };
+
+// Get single event details by ID - GET /api/v1/events/:id
+export const getEventById = async (id: string) => {
+  const event = await prisma.event.findUnique({
+    where: { id },
+    include: {
+      category: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+        },
+      },
+      organizer: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+        },
+      },
+      reviews: {
+        where: { isDeleted: false },
+        select: {
+          id: true,
+          rating: true,
+          comment: true,
+          createdAt: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              image: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!event) {
+    return null;
+  }
+
+  const remainingSeats = Math.max(0, event.capacity - event.bookedSeats);
+  const totalReviews = event.reviews.length;
+  const averageRating =
+    totalReviews > 0
+      ? Number(
+          (
+            event.reviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews
+          ).toFixed(1),
+        )
+      : 0;
+
+  return {
+    ...event,
+    remainingSeats,
+    averageRating,
+    totalReviews,
+  };
+};
+

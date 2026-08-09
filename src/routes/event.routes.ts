@@ -12,6 +12,7 @@ router.get(
   eventController.getEvents,
 );
 router.get("/active", eventController.getActiveEvents);
+router.get("/:id", eventController.getEventById);
 router.post(
   "/",
   authenticate,

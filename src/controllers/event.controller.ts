@@ -465,3 +465,36 @@ export const restoreEvent = async (
     });
   }
 };
+
+// Get single event details by ID - GET /api/v1/events/:id
+export const getEventById = async (
+  req: Request<{ id: string }>,
+  res: Response,
+): Promise<void> => {
+  const { id } = req.params;
+
+  try {
+    const event = await eventService.getEventById(id);
+
+    if (!event) {
+      res.status(404).json({
+        success: false,
+        message: "Event not found",
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Event details fetched successfully",
+      data: event,
+    });
+  } catch (error) {
+    console.error("Failed to get event details:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch event details",
+    });
+  }
+};
+
