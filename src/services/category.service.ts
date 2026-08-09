@@ -74,7 +74,21 @@ export const updateCategory = async (
 
 // Soft delete category - PATCH /api/v1/categories/soft-delete/:id
 export const softDeleteCategory = async (id: string): Promise<Category> => {
-  const category = await prisma.category.findUnique({ where: { id } });
+  const category = await prisma.category.findUnique({
+    where: { id },
+    include: {
+      _count: {
+        select: {
+          events: {
+            where: {
+              isDeleted: false,
+              status: "PUBLISHED",
+            },
+          },
+        },
+      },
+    },
+  });
 
   if (!category) {
     throw new Prisma.PrismaClientKnownRequestError("Category not found", {
@@ -85,6 +99,12 @@ export const softDeleteCategory = async (id: string): Promise<Category> => {
 
   if (category.isDeleted) {
     throw new Error("Category is already deleted");
+  }
+
+  if (category._count.events > 0) {
+    throw new Error(
+      `Cannot delete category with ${category._count.events} active published event(s)`,
+    );
   }
 
   return prisma.category.update({

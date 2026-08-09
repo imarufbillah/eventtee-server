@@ -189,6 +189,14 @@ export const softDeleteCategory = async (
       return;
     }
 
+    if (error instanceof Error && (error.message.includes("active published event") || error.message.includes("already deleted"))) {
+      res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+      return;
+    }
+
     console.error("Failed to delete category:", error);
     res.status(500).json({
       success: false,
