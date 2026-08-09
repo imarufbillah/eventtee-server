@@ -5,5 +5,6 @@ const router = Router();
 
 router.get("/", bookingController.getBookings);
 router.get("/active", bookingController.getActiveBookings);
+router.post("/", bookingController.createBooking);
 
 export default router;

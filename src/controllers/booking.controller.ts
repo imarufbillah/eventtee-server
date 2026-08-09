@@ -53,3 +53,27 @@ export const getActiveBookings = async (
     });
   }
 };
+
+// Create booking - POST /api/v1/bookings
+export const createBooking = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const data: Prisma.BookingCreateInput = req.body;
+
+    const booking = await bookingService.createBooking(data);
+
+    res.status(201).json({
+      success: true,
+      message: "Booking created successfully",
+      data: booking,
+    });
+  } catch (error) {
+    console.error("Failed to create booking:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to create booking",
+    });
+  }
+};

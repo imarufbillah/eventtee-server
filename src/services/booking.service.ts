@@ -46,3 +46,8 @@ export const getActiveBookings = async (skip = 0, take = 20) => {
   ]);
   return { bookings, total };
 };
+
+// Create booking - POST /api/v1/bookings
+export const createBooking = async (data: Prisma.BookingCreateInput) => {
+  return prisma.booking.create({ data });
+};
