@@ -12,6 +12,12 @@ router.get(
   eventController.getEvents,
 );
 router.get("/active", eventController.getActiveEvents);
+router.get(
+  "/:id/bookings",
+  authenticate,
+  authorize("ORGANIZER", "ADMIN"),
+  eventController.getEventBookings,
+);
 router.get("/:id", eventController.getEventById);
 router.post(
   "/",

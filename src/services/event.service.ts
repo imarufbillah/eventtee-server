@@ -273,3 +273,54 @@ export const getEventById = async (id: string) => {
   };
 };
 
+// Get bookings for an event - GET /api/v1/events/:id/bookings
+export const getEventBookings = async (
+  eventId: string,
+  userId: string,
+  userRole?: string,
+  skip = 0,
+  take = 20,
+) => {
+  const event = await verifyEventOwnership(eventId, userId, userRole);
+
+  const [bookings, total] = await Promise.all([
+    prisma.booking.findMany({
+      where: { eventId, isDeleted: false },
+      skip,
+      take,
+      select: {
+        id: true,
+        seats: true,
+        totalPrice: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    }),
+    prisma.booking.count({ where: { eventId, isDeleted: false } }),
+  ]);
+
+  return {
+    event: {
+      id: event.id,
+      title: event.title,
+      capacity: event.capacity,
+      bookedSeats: event.bookedSeats,
+    },
+    bookings,
+    total,
+  };
+};
+
+

@@ -505,3 +505,67 @@ export const getEventById = async (
   }
 };
 
+// Get bookings for an event - GET /api/v1/events/:id/bookings
+export const getEventBookings = async (
+  req: Request<{ id: string }>,
+  res: Response,
+): Promise<void> => {
+  const { id } = req.params;
+  const userId = req.user?.id;
+  const userRole = req.user?.role;
+
+  if (!userId) {
+    res.status(401).json({
+      success: false,
+      message: "Unauthorized: User not authenticated",
+    });
+    return;
+  }
+
+  try {
+    const page = Math.max(1, Number(req.query["page"]) || 1);
+    const limit = Math.min(100, Math.max(1, Number(req.query["limit"]) || 20));
+    const skip = (page - 1) * limit;
+
+    const data = await eventService.getEventBookings(
+      id,
+      userId,
+      userRole,
+      skip,
+      limit,
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Event bookings fetched successfully",
+      data,
+    });
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      res.status(404).json({
+        success: false,
+        message: "Event not found",
+      });
+      return;
+    }
+
+    if (error instanceof Error && error.message.startsWith("Forbidden")) {
+      res.status(403).json({
+        success: false,
+        message: error.message,
+      });
+      return;
+    }
+
+    console.error("Failed to get event bookings:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch event bookings",
+    });
+  }
+};
+
+
