@@ -85,3 +85,24 @@ export const cancelEvent = async (id: string) => {
     data: { status: "CANCELLED" },
   });
 };
+
+// Soft delete event - PATCH /api/v1/events/soft-delete/:id
+export const softDeleteEvent = async (id: string) => {
+  const event = await prisma.event.findUnique({ where: { id } });
+
+  if (!event) {
+    throw new Prisma.PrismaClientKnownRequestError("Event not found", {
+      code: "P2025",
+      clientVersion: Prisma.prismaVersion.client,
+    });
+  }
+
+  if (event.isDeleted) {
+    throw new Error("Event is already deleted");
+  }
+
+  return prisma.event.update({
+    where: { id },
+    data: { isDeleted: true },
+  });
+};

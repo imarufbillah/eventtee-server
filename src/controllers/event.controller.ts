@@ -211,3 +211,38 @@ export const cancelEvent = async (
     });
   }
 };
+
+// Soft delete event - PATCH /api/v1/events/soft-delete/:id
+export const softDeleteEvent = async (
+  req: Request<{ id: string }>,
+  res: Response,
+): Promise<void> => {
+  const { id } = req.params;
+
+  try {
+    const event = await eventService.softDeleteEvent(id);
+
+    res.status(200).json({
+      success: true,
+      message: "Event deleted successfully",
+      data: event,
+    });
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      res.status(404).json({
+        success: false,
+        message: "Event not found",
+      });
+      return;
+    }
+
+    console.error("Failed to delete event:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to delete event",
+    });
+  }
+};

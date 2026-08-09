@@ -9,5 +9,6 @@ router.post("/", eventController.createEvent);
 router.patch("/:id", eventController.updateEvent);
 router.patch("/publish/:id", eventController.publishEvent);
 router.patch("/cancel/:id", eventController.cancelEvent);
+router.patch("/soft-delete/:id", eventController.softDeleteEvent);
 
 export default router;
