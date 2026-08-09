@@ -103,7 +103,8 @@ export const updateEvent = async (
   res: Response,
 ): Promise<void> => {
   const { id } = req.params;
-  const { title, description, price, capacity, startDate, location } = req.body;
+  const { title, description, price, capacity, startDate, location, status } =
+    req.body;
 
   const data: Prisma.EventUpdateInput = {
     ...(title !== undefined && { title }),
@@ -113,6 +114,38 @@ export const updateEvent = async (
     ...(startDate !== undefined && { startDate: new Date(startDate) }),
     ...(location !== undefined && { location }),
   };
+
+  if (!status) {
+    res.status(400).json({
+      success: false,
+      message: "Status is required",
+    });
+    return;
+  }
+
+  if (status !== "DRAFT") {
+    res.status(403).json({
+      success: false,
+      message: "You are not authorized to update this event, contact the admin",
+    });
+    return;
+  }
+
+  if (
+    !data.title &&
+    !data.description &&
+    !data.price &&
+    !data.capacity &&
+    !data.startDate &&
+    !data.location
+  ) {
+    res.status(400).json({
+      success: false,
+      message:
+        "At least one field (title, description, price, capacity, startDate, location) must be provided",
+    });
+    return;
+  }
 
   try {
     const event = await eventService.updateEvent(id, data);
