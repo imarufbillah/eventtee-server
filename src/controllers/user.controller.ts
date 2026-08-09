@@ -75,3 +75,38 @@ export const updateUser = async (
     });
   }
 };
+
+// Soft delete user - PATCH /api/v1/users/soft-delete/:id
+export const softDeleteUser = async (
+  req: Request<{ id: string }>,
+  res: Response,
+): Promise<void> => {
+  const { id } = req.params;
+
+  try {
+    const deletedUser = await userService.softDeleteUser(id);
+
+    res.status(200).json({
+      success: true,
+      message: "User deleted successfully",
+      data: deletedUser,
+    });
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+      return;
+    }
+
+    console.error("Failed to delete user:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to delete user",
+    });
+  }
+};

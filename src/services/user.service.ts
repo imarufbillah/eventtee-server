@@ -27,3 +27,24 @@ export const updateUser = async (
     data,
   });
 };
+
+// Soft delete user - PATCH /api/v1/users/soft-delete/:id
+export const softDeleteUser = async (id: string): Promise<User> => {
+  const user = await prisma.user.findUnique({ where: { id } });
+
+  if (!user) {
+    throw new Prisma.PrismaClientKnownRequestError("User not found", {
+      code: "P2025",
+      clientVersion: Prisma.prismaVersion.client,
+    });
+  }
+
+  if (user.isDeleted) {
+    throw new Error("User is already deleted");
+  }
+
+  return prisma.user.update({
+    where: { id },
+    data: { isDeleted: true },
+  });
+};
