@@ -48,3 +48,11 @@ export const softDeleteUser = async (id: string): Promise<User> => {
     data: { isDeleted: true },
   });
 };
+
+// Restore user - PATCH /api/v1/users/restore/:id
+export const restoreUser = async (id: string): Promise<User> => {
+  return prisma.user.update({
+    where: { id },
+    data: { isDeleted: false },
+  });
+};
