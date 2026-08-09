@@ -7,7 +7,7 @@ export const getCategories = async (skip = 0, take = 20) => {
     prisma.category.findMany({
       skip,
       take,
-      select: { id: true, name: true, slug: true },
+      select: { id: true, name: true, slug: true, isDeleted: true },
     }),
     prisma.category.count(),
   ]);
