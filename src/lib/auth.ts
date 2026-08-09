@@ -25,14 +25,32 @@ export const auth = betterAuth({
     additionalFields: {
       role: {
         type: ["USER", "ORGANIZER", "ADMIN"],
-        required: true,
+        required: false,
         defaultValue: "USER",
-        input: false,
+        input: true,
       },
       isDeleted: {
         type: "boolean",
         required: false,
         defaultValue: false,
+      },
+    },
+  },
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (user) => {
+          let role = user["role"];
+          if (role !== "ORGANIZER" && role !== "USER") {
+            role = "USER";
+          }
+          return {
+            data: {
+              ...user,
+              role,
+            },
+          };
+        },
       },
     },
   },
