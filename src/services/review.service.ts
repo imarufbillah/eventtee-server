@@ -27,3 +27,11 @@ export const getReviews = async (skip = 0, take = 20) => {
 export const createReview = async (data: Prisma.ReviewCreateInput) => {
   return prisma.review.create({ data });
 };
+
+// Update review - PATCH /api/v1/reviews/:id
+export const updateReview = async (
+  id: string,
+  data: Prisma.ReviewUpdateInput,
+) => {
+  return prisma.review.update({ where: { id }, data });
+};

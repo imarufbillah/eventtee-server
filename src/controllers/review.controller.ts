@@ -51,3 +51,28 @@ export const createReview = async (
     });
   }
 };
+
+// Update review - PATCH /api/v1/reviews/:id
+export const updateReview = async (
+  req: Request<{ id: string }>,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const data: Prisma.ReviewUpdateInput = req.body;
+
+    const review = await reviewService.updateReview(id, data);
+
+    res.status(200).json({
+      success: true,
+      message: "Review updated successfully",
+      data: review,
+    });
+  } catch (error) {
+    console.error("Failed to update review:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to update review",
+    });
+  }
+};
