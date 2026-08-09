@@ -77,3 +77,11 @@ export const publishEvent = async (id: string) => {
     data: { status: "PUBLISHED" },
   });
 };
+
+// Cancel event - PATCH /api/v1/events/cancel/:id
+export const cancelEvent = async (id: string) => {
+  return prisma.event.update({
+    where: { id },
+    data: { status: "CANCELLED" },
+  });
+};

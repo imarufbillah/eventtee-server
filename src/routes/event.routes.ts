@@ -8,5 +8,6 @@ router.get("/active", eventController.getActiveEvents);
 router.post("/", eventController.createEvent);
 router.patch("/:id", eventController.updateEvent);
 router.patch("/publish/:id", eventController.publishEvent);
+router.patch("/cancel/:id", eventController.cancelEvent);
 
 export default router;

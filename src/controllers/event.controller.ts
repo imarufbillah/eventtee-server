@@ -187,3 +187,27 @@ export const publishEvent = async (
     });
   }
 };
+
+// Cancel event - PATCH /api/v1/events/cancel/:id
+export const cancelEvent = async (
+  req: Request<{ id: string }>,
+  res: Response,
+): Promise<void> => {
+  const { id } = req.params;
+
+  try {
+    const event = await eventService.cancelEvent(id);
+
+    res.status(200).json({
+      success: true,
+      message: "Event cancelled successfully",
+      data: event,
+    });
+  } catch (error) {
+    console.error("Failed to cancel event:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to cancel event",
+    });
+  }
+};
