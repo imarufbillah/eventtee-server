@@ -1,5 +1,5 @@
 import { prisma } from "../config/db.js";
-import { Prisma } from "../generated/prisma/client.js";
+import { Prisma, type Category } from "../generated/prisma/client.js";
 
 // Get categories - GET /api/v1/categories
 export const getCategories = async (skip = 0, take = 20) => {
@@ -25,4 +25,25 @@ export const updateCategory = async (
   data: Prisma.CategoryUpdateInput,
 ) => {
   return prisma.category.update({ where: { id }, data });
+};
+
+// Soft delete category - PATCH /api/v1/categories/soft-delete/:id
+export const softDeleteCategory = async (id: string): Promise<Category> => {
+  const category = await prisma.category.findUnique({ where: { id } });
+
+  if (!category) {
+    throw new Prisma.PrismaClientKnownRequestError("Category not found", {
+      code: "P2025",
+      clientVersion: Prisma.prismaVersion.client,
+    });
+  }
+
+  if (category.isDeleted) {
+    throw new Error("Category is already deleted");
+  }
+
+  return prisma.category.update({
+    where: { id },
+    data: { isDeleted: true },
+  });
 };

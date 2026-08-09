@@ -102,3 +102,38 @@ export const updateCategory = async (
     });
   }
 };
+
+// Soft delete category - PATCH /api/v1/categories/soft-delete/:id
+export const softDeleteCategory = async (
+  req: Request<{ id: string }>,
+  res: Response,
+): Promise<void> => {
+  const { id } = req.params;
+
+  try {
+    const category = await categoryService.softDeleteCategory(id);
+
+    res.status(200).json({
+      success: true,
+      message: "Category deleted successfully",
+      data: category,
+    });
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      res.status(404).json({
+        success: false,
+        message: "Category not found",
+      });
+      return;
+    }
+
+    console.error("Failed to delete category:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to delete category",
+    });
+  }
+};
