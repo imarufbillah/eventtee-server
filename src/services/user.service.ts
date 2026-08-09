@@ -20,6 +20,25 @@ export const getUsers = async (skip = 0, take = 20) => {
   return { users, total };
 };
 
+// Get active users - GET /api/v1/users/active
+export const getActiveUsers = async (skip = 0, take = 20) => {
+  const [users, total] = await Promise.all([
+    prisma.user.findMany({
+      where: { isDeleted: false },
+      skip,
+      take,
+      select: {
+        id: true,
+        name: true,
+        image: true,
+        email: true,
+      },
+    }),
+    prisma.user.count({ where: { isDeleted: false } }),
+  ]);
+  return { users, total };
+};
+
 // Update user - PATCH /api/v1/users/:id
 export const updateUser = async (
   id: string,
