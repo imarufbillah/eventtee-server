@@ -108,22 +108,15 @@ export const createReview = async ({
   });
 };
 
-// Update review - PATCH /api/v1/reviews/:id
-export const updateReview = async (
-  id: string,
-  data: Prisma.ReviewUpdateInput,
+// Helper: verify review ownership
+export const verifyReviewOwnership = async (
+  reviewId: string,
+  userId: string,
+  userRole?: string,
 ) => {
-  return prisma.review.update({ where: { id }, data });
-};
-
-// Delete review - DELETE /api/v1/reviews/:id
-export const deleteReview = async (id: string) => {
-  return prisma.review.delete({ where: { id } });
-};
-
-// Soft delete review - PATCH /api/v1/reviews/soft-delete/:id
-export const softDeleteReview = async (id: string) => {
-  const review = await prisma.review.findUnique({ where: { id } });
+  const review = await prisma.review.findUnique({
+    where: { id: reviewId },
+  });
 
   if (!review) {
     throw new Prisma.PrismaClientKnownRequestError("Review not found", {
@@ -131,6 +124,51 @@ export const softDeleteReview = async (id: string) => {
       clientVersion: Prisma.prismaVersion.client,
     });
   }
+
+  if (review.userId !== userId && userRole !== "ADMIN") {
+    throw new Error("Forbidden: You can only modify your own reviews");
+  }
+
+  return review;
+};
+
+// Update review - PATCH /api/v1/reviews/:id
+export const updateReview = async (
+  id: string,
+  userId: string,
+  userRole: string | undefined,
+  data: { rating?: number; comment?: string },
+) => {
+  const review = await verifyReviewOwnership(id, userId, userRole);
+
+  if (review.isDeleted) {
+    throw new Error("Cannot update a deleted review");
+  }
+
+  const updateData: Prisma.ReviewUpdateInput = {};
+  if (data.rating !== undefined) updateData.rating = data.rating;
+  if (data.comment !== undefined) updateData.comment = data.comment;
+
+  return prisma.review.update({ where: { id }, data: updateData });
+};
+
+// Delete review - DELETE /api/v1/reviews/:id
+export const deleteReview = async (
+  id: string,
+  userId: string,
+  userRole?: string,
+) => {
+  await verifyReviewOwnership(id, userId, userRole);
+  return prisma.review.delete({ where: { id } });
+};
+
+// Soft delete review - PATCH /api/v1/reviews/soft-delete/:id
+export const softDeleteReview = async (
+  id: string,
+  userId: string,
+  userRole?: string,
+) => {
+  const review = await verifyReviewOwnership(id, userId, userRole);
 
   if (review.isDeleted) {
     throw new Error("Review is already deleted");
@@ -143,7 +181,13 @@ export const softDeleteReview = async (id: string) => {
 };
 
 // Restore review - PATCH /api/v1/reviews/restore/:id
-export const restoreReview = async (id: string) => {
+export const restoreReview = async (
+  id: string,
+  userId: string,
+  userRole?: string,
+) => {
+  await verifyReviewOwnership(id, userId, userRole);
+
   return prisma.review.update({
     where: { id },
     data: { isDeleted: false },

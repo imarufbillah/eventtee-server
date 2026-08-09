@@ -150,11 +150,43 @@ export const updateReview = async (
   req: Request<{ id: string }>,
   res: Response,
 ): Promise<void> => {
-  try {
-    const { id } = req.params;
-    const data: Prisma.ReviewUpdateInput = req.body;
+  const { id } = req.params;
+  const userId = req.user?.id;
+  const userRole = req.user?.role;
+  const { rating, comment } = req.body;
 
-    const review = await reviewService.updateReview(id, data);
+  if (!userId) {
+    res.status(401).json({
+      success: false,
+      message: "Unauthorized: User not authenticated",
+    });
+    return;
+  }
+
+  const updateData: { rating?: number; comment?: string } = {};
+  if (rating !== undefined) {
+    const parsedRating = Number(rating);
+    if (isNaN(parsedRating) || parsedRating < 1 || parsedRating > 5) {
+      res.status(400).json({
+        success: false,
+        message: "rating must be an integer between 1 and 5",
+      });
+      return;
+    }
+    updateData.rating = Math.floor(parsedRating);
+  }
+
+  if (typeof comment === "string") {
+    updateData.comment = comment;
+  }
+
+  try {
+    const review = await reviewService.updateReview(
+      id,
+      userId,
+      userRole,
+      updateData,
+    );
 
     res.status(200).json({
       success: true,
@@ -162,6 +194,33 @@ export const updateReview = async (
       data: review,
     });
   } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      res.status(404).json({
+        success: false,
+        message: "Review not found",
+      });
+      return;
+    }
+
+    if (error instanceof Error && error.message.startsWith("Forbidden")) {
+      res.status(403).json({
+        success: false,
+        message: error.message,
+      });
+      return;
+    }
+
+    if (error instanceof Error && error.message.includes("Cannot")) {
+      res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+      return;
+    }
+
     console.error("Failed to update review:", error);
     res.status(500).json({
       success: false,
@@ -175,16 +234,45 @@ export const deleteReview = async (
   req: Request<{ id: string }>,
   res: Response,
 ): Promise<void> => {
-  try {
-    const { id } = req.params;
+  const { id } = req.params;
+  const userId = req.user?.id;
+  const userRole = req.user?.role;
 
-    await reviewService.deleteReview(id);
+  if (!userId) {
+    res.status(401).json({
+      success: false,
+      message: "Unauthorized: User not authenticated",
+    });
+    return;
+  }
+
+  try {
+    await reviewService.deleteReview(id, userId, userRole);
 
     res.status(200).json({
       success: true,
       message: "Review deleted successfully",
     });
   } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      res.status(404).json({
+        success: false,
+        message: "Review not found",
+      });
+      return;
+    }
+
+    if (error instanceof Error && error.message.startsWith("Forbidden")) {
+      res.status(403).json({
+        success: false,
+        message: error.message,
+      });
+      return;
+    }
+
     console.error("Failed to delete review:", error);
     res.status(500).json({
       success: false,
@@ -199,9 +287,19 @@ export const softDeleteReview = async (
   res: Response,
 ): Promise<void> => {
   const { id } = req.params;
+  const userId = req.user?.id;
+  const userRole = req.user?.role;
+
+  if (!userId) {
+    res.status(401).json({
+      success: false,
+      message: "Unauthorized: User not authenticated",
+    });
+    return;
+  }
 
   try {
-    const review = await reviewService.softDeleteReview(id);
+    const review = await reviewService.softDeleteReview(id, userId, userRole);
 
     res.status(200).json({
       success: true,
@@ -220,6 +318,22 @@ export const softDeleteReview = async (
       return;
     }
 
+    if (error instanceof Error && error.message.startsWith("Forbidden")) {
+      res.status(403).json({
+        success: false,
+        message: error.message,
+      });
+      return;
+    }
+
+    if (error instanceof Error && error.message.includes("already")) {
+      res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+      return;
+    }
+
     console.error("Failed to delete review:", error);
     res.status(500).json({
       success: false,
@@ -234,9 +348,19 @@ export const restoreReview = async (
   res: Response,
 ): Promise<void> => {
   const { id } = req.params;
+  const userId = req.user?.id;
+  const userRole = req.user?.role;
+
+  if (!userId) {
+    res.status(401).json({
+      success: false,
+      message: "Unauthorized: User not authenticated",
+    });
+    return;
+  }
 
   try {
-    const review = await reviewService.restoreReview(id);
+    const review = await reviewService.restoreReview(id, userId, userRole);
 
     res.status(200).json({
       success: true,
@@ -251,6 +375,14 @@ export const restoreReview = async (
       res.status(404).json({
         success: false,
         message: "Review not found",
+      });
+      return;
+    }
+
+    if (error instanceof Error && error.message.startsWith("Forbidden")) {
+      res.status(403).json({
+        success: false,
+        message: error.message,
       });
       return;
     }
