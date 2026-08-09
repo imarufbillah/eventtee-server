@@ -77,3 +77,27 @@ export const createBooking = async (
     });
   }
 };
+
+// Cancel booking - PATCH /api/v1/bookings/cancel/:id
+export const cancelBooking = async (
+  req: Request<{ id: string }>,
+  res: Response,
+): Promise<void> => {
+  const { id } = req.params;
+
+  try {
+    const booking = await bookingService.cancelBooking(id);
+
+    res.status(200).json({
+      success: true,
+      message: "Booking cancelled successfully",
+      data: booking,
+    });
+  } catch (error) {
+    console.error("Failed to cancel booking:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to cancel booking",
+    });
+  }
+};

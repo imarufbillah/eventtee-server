@@ -51,3 +51,11 @@ export const getActiveBookings = async (skip = 0, take = 20) => {
 export const createBooking = async (data: Prisma.BookingCreateInput) => {
   return prisma.booking.create({ data });
 };
+
+// Cancel booking - PATCH /api/v1/bookings/cancel/:id
+export const cancelBooking = async (id: string) => {
+  return prisma.booking.update({
+    where: { id },
+    data: { status: "CANCELLED" },
+  });
+};
