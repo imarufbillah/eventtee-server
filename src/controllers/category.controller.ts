@@ -137,3 +137,38 @@ export const softDeleteCategory = async (
     });
   }
 };
+
+// Restore category - PATCH /api/v1/categories/restore/:id
+export const restoreCategory = async (
+  req: Request<{ id: string }>,
+  res: Response,
+): Promise<void> => {
+  const { id } = req.params;
+
+  try {
+    const category = await categoryService.restoreCategory(id);
+
+    res.status(200).json({
+      success: true,
+      message: "Category restored successfully",
+      data: category,
+    });
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      res.status(404).json({
+        success: false,
+        message: "Category not found",
+      });
+      return;
+    }
+
+    console.error("Failed to restore category:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to restore category",
+    });
+  }
+};

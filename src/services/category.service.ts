@@ -47,3 +47,11 @@ export const softDeleteCategory = async (id: string): Promise<Category> => {
     data: { isDeleted: true },
   });
 };
+
+// Restore category - PATCH /api/v1/categories/restore/:id
+export const restoreCategory = async (id: string): Promise<Category> => {
+  return prisma.category.update({
+    where: { id },
+    data: { isDeleted: false },
+  });
+};
