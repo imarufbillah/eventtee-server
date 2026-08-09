@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { Prisma } from "../generated/prisma/client.js";
 import * as bookingService from "../services/booking.service.js";
 
 // Get bookings - GET /api/v1/bookings
@@ -126,16 +127,53 @@ export const cancelBooking = async (
   res: Response,
 ): Promise<void> => {
   const { id } = req.params;
+  const userId = req.user?.id;
+  const userRole = req.user?.role;
+
+  if (!userId) {
+    res.status(401).json({
+      success: false,
+      message: "Unauthorized: User not authenticated",
+    });
+    return;
+  }
 
   try {
-    const booking = await bookingService.cancelBooking(id);
+    const booking = await bookingService.cancelBooking(id, userId, userRole);
 
     res.status(200).json({
       success: true,
-      message: "Booking cancelled successfully",
+      message: "Booking cancelled successfully and seats released",
       data: booking,
     });
   } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      res.status(404).json({
+        success: false,
+        message: "Booking not found",
+      });
+      return;
+    }
+
+    if (error instanceof Error && error.message.startsWith("Forbidden")) {
+      res.status(403).json({
+        success: false,
+        message: error.message,
+      });
+      return;
+    }
+
+    if (error instanceof Error && error.message.includes("already")) {
+      res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+      return;
+    }
+
     console.error("Failed to cancel booking:", error);
     res.status(500).json({
       success: false,

@@ -105,10 +105,46 @@ export const createBooking = async ({
 };
 
 // Cancel booking - PATCH /api/v1/bookings/cancel/:id
-export const cancelBooking = async (id: string) => {
-  return prisma.booking.update({
-    where: { id },
-    data: { status: "CANCELLED" },
+export const cancelBooking = async (
+  bookingId: string,
+  userId: string,
+  userRole?: string,
+) => {
+  return prisma.$transaction(async (tx) => {
+    const booking = await tx.booking.findUnique({
+      where: { id: bookingId },
+    });
+
+    if (!booking || booking.isDeleted) {
+      throw new Prisma.PrismaClientKnownRequestError("Booking not found", {
+        code: "P2025",
+        clientVersion: Prisma.prismaVersion.client,
+      });
+    }
+
+    if (booking.userId !== userId && userRole !== "ADMIN") {
+      throw new Error("Forbidden: You can only cancel your own bookings");
+    }
+
+    if (booking.status === "CANCELLED") {
+      throw new Error("Booking is already cancelled");
+    }
+
+    const updatedBooking = await tx.booking.update({
+      where: { id: bookingId },
+      data: { status: "CANCELLED" },
+    });
+
+    await tx.event.update({
+      where: { id: booking.eventId },
+      data: {
+        bookedSeats: {
+          decrement: booking.seats,
+        },
+      },
+    });
+
+    return updatedBooking;
   });
 };
 
