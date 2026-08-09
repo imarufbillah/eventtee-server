@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import { Prisma } from "../generated/prisma/client.js";
 import * as categoryService from "../services/category.service.js";
 
-type updateCategoryBody = Pick<Prisma.CategoryUpdateInput, "name" | "slug">;
+type updateCategoryBody = { name?: string; slug?: string };
 
 // Get categories - GET /api/v1/categories
 export const getCategories = async (
@@ -58,10 +58,18 @@ export const getActiveCategories = async (
 
 // Create category - POST /api/v1/categories
 export const createCategory = async (
-  req: Request,
+  req: Request<unknown, unknown, { name?: string; slug?: string }>,
   res: Response,
 ): Promise<void> => {
   const { name, slug } = req.body;
+
+  if (!name || typeof name !== "string" || !name.trim()) {
+    res.status(400).json({
+      success: false,
+      message: "Category name is required",
+    });
+    return;
+  }
 
   try {
     const category = await categoryService.createCategory(name, slug);
@@ -72,6 +80,19 @@ export const createCategory = async (
       data: category,
     });
   } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      const target = (error.meta?.["target"] as string[]) || [];
+      const field = target.includes("name") ? "name" : "slug";
+      res.status(409).json({
+        success: false,
+        message: `Category with this ${field} already exists`,
+      });
+      return;
+    }
+
     console.error("Failed to create category:", error);
     res.status(500).json({
       success: false,
@@ -96,13 +117,12 @@ export const updateCategory = async (
     return;
   }
 
-  const data: Prisma.CategoryUpdateInput = {
-    ...(name !== undefined && { name }),
-    ...(slug !== undefined && { slug }),
-  };
-
   try {
-    const category = await categoryService.updateCategory(id, data);
+    const updateData: { name?: string; slug?: string } = {};
+    if (name !== undefined) updateData.name = name;
+    if (slug !== undefined) updateData.slug = slug;
+
+    const category = await categoryService.updateCategory(id, updateData);
 
     res.status(200).json({
       success: true,
@@ -117,6 +137,19 @@ export const updateCategory = async (
       res.status(404).json({
         success: false,
         message: "Category not found",
+      });
+      return;
+    }
+
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      const target = (error.meta?.["target"] as string[]) || [];
+      const field = target.includes("name") ? "name" : "slug";
+      res.status(409).json({
+        success: false,
+        message: `Category with this ${field} already exists`,
       });
       return;
     }

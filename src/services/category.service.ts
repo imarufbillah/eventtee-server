@@ -1,6 +1,19 @@
 import { prisma } from "../config/db.js";
 import { Prisma, type Category } from "../generated/prisma/client.js";
 
+/**
+ * Generate a URL-friendly slug from text
+ */
+export const slugify = (text: string): string => {
+  return text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/&/g, "and")
+    .replace(/[\s\W_]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+};
+
 // Get categories - GET /api/v1/categories
 export const getCategories = async (skip = 0, take = 20) => {
   const [categories, total] = await Promise.all([
@@ -29,16 +42,34 @@ export const getActiveCategories = async (skip = 0, take = 20) => {
 };
 
 // Create category - POST /api/v1/categories
-export const createCategory = async (name: string, slug: string) => {
-  return prisma.category.create({ data: { name, slug } });
+export const createCategory = async (name: string, slug?: string) => {
+  const categorySlug = slug && slug.trim() ? slugify(slug) : slugify(name);
+  return prisma.category.create({
+    data: {
+      name: name.trim(),
+      slug: categorySlug,
+    },
+  });
 };
 
 // Update category - PATCH /api/v1/categories/:id
 export const updateCategory = async (
   id: string,
-  data: Prisma.CategoryUpdateInput,
+  data: { name?: string; slug?: string },
 ) => {
-  return prisma.category.update({ where: { id }, data });
+  const updateData: Prisma.CategoryUpdateInput = {};
+
+  if (data.name !== undefined) {
+    updateData.name = data.name.trim();
+  }
+
+  if (data.slug !== undefined && data.slug.trim()) {
+    updateData.slug = slugify(data.slug);
+  } else if (data.name !== undefined) {
+    updateData.slug = slugify(data.name);
+  }
+
+  return prisma.category.update({ where: { id }, data: updateData });
 };
 
 // Soft delete category - PATCH /api/v1/categories/soft-delete/:id
