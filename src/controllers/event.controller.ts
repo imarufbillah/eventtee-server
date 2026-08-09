@@ -50,3 +50,49 @@ export const getActiveEvents = async (
     });
   }
 };
+
+// Create event - POST /api/v1/events
+export const createEvent = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  const {
+    title,
+    description,
+    price,
+    capacity,
+    startDate,
+    location,
+    categoryId,
+    organizerId,
+  } = req.body;
+  const user = (req as Request & { user?: { id: string } }).user;
+  const finalOrganizerId = user?.id || organizerId;
+
+  const data: Prisma.EventCreateInput = {
+    title,
+    description,
+    price,
+    capacity,
+    startDate: new Date(startDate),
+    location,
+    category: { connect: { id: categoryId } },
+    organizer: { connect: { id: finalOrganizerId } },
+  };
+
+  try {
+    const event = await eventService.createEvent(data);
+
+    res.status(201).json({
+      success: true,
+      message: "Event created successfully",
+      data: event,
+    });
+  } catch (error) {
+    console.error("Failed to create event:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to create event",
+    });
+  }
+};

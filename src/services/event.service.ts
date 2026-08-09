@@ -1,5 +1,5 @@
 import { prisma } from "../config/db.js";
-import { Prisma, type Event } from "../generated/prisma/client.js";
+import { Prisma } from "../generated/prisma/client.js";
 
 // Get events - GET /api/v1/events
 export const getEvents = async (skip = 0, take = 20) => {
@@ -55,4 +55,9 @@ export const getActiveEvents = async (skip = 0, take = 20) => {
     prisma.event.count({ where: { isDeleted: false } }),
   ]);
   return { events, total };
+};
+
+// Create event - POST /api/v1/events
+export const createEvent = async (data: Prisma.EventCreateInput) => {
+  return prisma.event.create({ data });
 };
