@@ -28,3 +28,31 @@ export const getEvents = async (skip = 0, take = 20) => {
   ]);
   return { events, total };
 };
+
+// Get active events - GET /api/v1/events/active
+export const getActiveEvents = async (skip = 0, take = 20) => {
+  const [events, total] = await Promise.all([
+    prisma.event.findMany({
+      where: { isDeleted: false },
+      skip,
+      take,
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        price: true,
+        capacity: true,
+        bookedSeats: true,
+        startDate: true,
+        location: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        categoryId: true,
+        organizerId: true,
+      },
+    }),
+    prisma.event.count({ where: { isDeleted: false } }),
+  ]);
+  return { events, total };
+};
