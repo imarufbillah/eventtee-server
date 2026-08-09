@@ -45,9 +45,67 @@ export const getActiveReviews = async (skip = 0, take = 20) => {
   return { reviews, total };
 };
 
+export interface CreateReviewInput {
+  userId: string;
+  eventId: string;
+  rating: number;
+  comment?: string;
+}
+
 // Create review - POST /api/v1/reviews
-export const createReview = async (data: Prisma.ReviewCreateInput) => {
-  return prisma.review.create({ data });
+export const createReview = async ({
+  userId,
+  eventId,
+  rating,
+  comment,
+}: CreateReviewInput) => {
+  const event = await prisma.event.findUnique({
+    where: { id: eventId },
+  });
+
+  if (!event || event.isDeleted) {
+    throw new Error("Event not found or unavailable");
+  }
+
+  if (event.status !== "COMPLETED") {
+    throw new Error("Reviews can only be submitted for COMPLETED events");
+  }
+
+  const confirmedBooking = await prisma.booking.findFirst({
+    where: {
+      userId,
+      eventId,
+      status: "CONFIRMED",
+      isDeleted: false,
+    },
+  });
+
+  if (!confirmedBooking) {
+    throw new Error(
+      "Forbidden: You can only review events you have a CONFIRMED booking for",
+    );
+  }
+
+  const existingReview = await prisma.review.findFirst({
+    where: {
+      userId,
+      eventId,
+      isDeleted: false,
+    },
+  });
+
+  if (existingReview) {
+    throw new Error("You have already submitted a review for this event");
+  }
+
+  return prisma.review.create({
+    data: {
+      rating,
+      comment: comment || null,
+      user: { connect: { id: userId } },
+      event: { connect: { id: eventId } },
+    },
+  });
 };
 
 // Update review - PATCH /api/v1/reviews/:id

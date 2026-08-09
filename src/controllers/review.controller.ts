@@ -59,10 +59,45 @@ export const createReview = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
-  try {
-    const data: Prisma.ReviewCreateInput = req.body;
+  const userId = req.user?.id;
+  const { eventId, rating, comment } = req.body;
 
-    const review = await reviewService.createReview(data);
+  if (!userId) {
+    res.status(401).json({
+      success: false,
+      message: "Unauthorized: User not authenticated",
+    });
+    return;
+  }
+
+  if (!eventId || typeof eventId !== "string") {
+    res.status(400).json({
+      success: false,
+      message: "eventId is required",
+    });
+    return;
+  }
+
+  const parsedRating = Number(rating);
+  if (isNaN(parsedRating) || parsedRating < 1 || parsedRating > 5) {
+    res.status(400).json({
+      success: false,
+      message: "rating must be an integer between 1 and 5",
+    });
+    return;
+  }
+
+  try {
+    const reviewData: reviewService.CreateReviewInput = {
+      userId,
+      eventId,
+      rating: Math.floor(parsedRating),
+    };
+    if (typeof comment === "string" && comment.trim().length > 0) {
+      reviewData.comment = comment;
+    }
+
+    const review = await reviewService.createReview(reviewData);
 
     res.status(201).json({
       success: true,
@@ -70,6 +105,38 @@ export const createReview = async (
       data: review,
     });
   } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      res.status(400).json({
+        success: false,
+        message: "You have already submitted a review for this event",
+      });
+      return;
+    }
+
+    if (error instanceof Error && error.message.startsWith("Forbidden")) {
+      res.status(403).json({
+        success: false,
+        message: error.message,
+      });
+      return;
+    }
+
+    if (
+      error instanceof Error &&
+      (error.message.includes("COMPLETED") ||
+        error.message.includes("already submitted") ||
+        error.message.includes("unavailable"))
+    ) {
+      res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+      return;
+    }
+
     console.error("Failed to create review:", error);
     res.status(500).json({
       success: false,
