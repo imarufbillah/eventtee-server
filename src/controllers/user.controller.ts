@@ -61,6 +61,17 @@ export const updateUser = async (
   const { id } = req.params;
   const { name, image } = req.body;
 
+  const authUserId = req.user?.id;
+  const authUserRole = req.user?.role;
+
+  if (authUserId !== id && authUserRole !== "ADMIN") {
+    res.status(403).json({
+      success: false,
+      message: "Forbidden: You can only update your own profile",
+    });
+    return;
+  }
+
   if (!name && !image) {
     res.status(400).json({
       success: false,
