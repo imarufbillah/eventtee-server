@@ -246,3 +246,38 @@ export const softDeleteEvent = async (
     });
   }
 };
+
+// Restore event - PATCH /api/v1/events/restore/:id
+export const restoreEvent = async (
+  req: Request<{ id: string }>,
+  res: Response,
+): Promise<void> => {
+  const { id } = req.params;
+
+  try {
+    const event = await eventService.restoreEvent(id);
+
+    res.status(200).json({
+      success: true,
+      message: "Event restored successfully",
+      data: event,
+    });
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      res.status(404).json({
+        success: false,
+        message: "Event not found",
+      });
+      return;
+    }
+
+    console.error("Failed to restore event:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to restore event",
+    });
+  }
+};

@@ -106,3 +106,11 @@ export const softDeleteEvent = async (id: string) => {
     data: { isDeleted: true },
   });
 };
+
+// Restore event - PATCH /api/v1/events/restore/:id
+export const restoreEvent = async (id: string) => {
+  return prisma.event.update({
+    where: { id },
+    data: { isDeleted: false },
+  });
+};

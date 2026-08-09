@@ -10,5 +10,6 @@ router.patch("/:id", eventController.updateEvent);
 router.patch("/publish/:id", eventController.publishEvent);
 router.patch("/cancel/:id", eventController.cancelEvent);
 router.patch("/soft-delete/:id", eventController.softDeleteEvent);
+router.patch("/restore/:id", eventController.restoreEvent);
 
 export default router;
