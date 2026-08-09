@@ -6,6 +6,7 @@ import { auth } from "./lib/auth.js";
 import userRoutes from "./routes/user.routes.js";
 import categoryRoutes from "./routes/category.routes.js";
 import eventRoutes from "./routes/event.routes.js";
+import bookingRoutes from "./routes/booking.routes.js";
 
 const app = express();
 
@@ -34,5 +35,6 @@ app.get("/", (_req, res): void => {
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/categories", categoryRoutes);
 app.use("/api/v1/events", eventRoutes);
+app.use("/api/v1/bookings", bookingRoutes);
 
 export default app;
