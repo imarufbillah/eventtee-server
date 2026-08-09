@@ -64,20 +64,55 @@ export const createEvent = async (
     startDate,
     location,
     categoryId,
-    organizerId,
   } = req.body;
-  const user = (req as Request & { user?: { id: string } }).user;
-  const finalOrganizerId = user?.id || organizerId;
+
+  const organizerId = req.user?.id;
+
+  if (!organizerId) {
+    res.status(401).json({
+      success: false,
+      message: "Unauthorized: User not authenticated",
+    });
+    return;
+  }
+
+  if (!title || !description || price === undefined || !capacity || !startDate || !categoryId) {
+    res.status(400).json({
+      success: false,
+      message: "Required fields missing: title, description, price, capacity, startDate, categoryId",
+    });
+    return;
+  }
+
+  const parsedPrice = Number(price);
+  const parsedCapacity = Number(capacity);
+
+  if (isNaN(parsedPrice) || parsedPrice < 0) {
+    res.status(400).json({
+      success: false,
+      message: "Price must be a non-negative number",
+    });
+    return;
+  }
+
+  if (isNaN(parsedCapacity) || parsedCapacity <= 0) {
+    res.status(400).json({
+      success: false,
+      message: "Capacity must be a positive integer",
+    });
+    return;
+  }
 
   const data: Prisma.EventCreateInput = {
     title,
     description,
-    price,
-    capacity,
+    price: parsedPrice,
+    capacity: parsedCapacity,
     startDate: new Date(startDate),
-    location,
+    location: location || null,
+    status: "DRAFT",
     category: { connect: { id: categoryId } },
-    organizer: { connect: { id: finalOrganizerId } },
+    organizer: { connect: { id: organizerId } },
   };
 
   try {
@@ -85,10 +120,21 @@ export const createEvent = async (
 
     res.status(201).json({
       success: true,
-      message: "Event created successfully",
+      message: "Event created successfully as DRAFT",
       data: event,
     });
   } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid categoryId provided",
+      });
+      return;
+    }
+
     console.error("Failed to create event:", error);
     res.status(500).json({
       success: false,
