@@ -1,6 +1,30 @@
 import { prisma } from "../config/db.js";
 import { Prisma } from "../generated/prisma/client.js";
 
+/**
+ * Verify event existence and ownership (organizerId === userId or ADMIN role)
+ */
+export const verifyEventOwnership = async (
+  eventId: string,
+  userId: string,
+  userRole?: string,
+) => {
+  const event = await prisma.event.findUnique({ where: { id: eventId } });
+
+  if (!event) {
+    throw new Prisma.PrismaClientKnownRequestError("Event not found", {
+      code: "P2025",
+      clientVersion: Prisma.prismaVersion.client,
+    });
+  }
+
+  if (event.organizerId !== userId && userRole !== "ADMIN") {
+    throw new Error("Forbidden: You can only manage your own events");
+  }
+
+  return event;
+};
+
 // Get events - GET /api/v1/events
 export const getEvents = async (skip = 0, take = 20) => {
   const [events, total] = await Promise.all([
@@ -65,13 +89,35 @@ export const createEvent = async (data: Prisma.EventCreateInput) => {
 // Update event - PATCH /api/v1/events/:id
 export const updateEvent = async (
   id: string,
+  userId: string,
+  userRole: string | undefined,
   data: Prisma.EventUpdateInput,
 ) => {
+  const event = await verifyEventOwnership(id, userId, userRole);
+
+  if (event.isDeleted) {
+    throw new Error("Cannot update a deleted event");
+  }
+
   return prisma.event.update({ where: { id }, data });
 };
 
 // Publish event - PATCH /api/v1/events/publish/:id
-export const publishEvent = async (id: string) => {
+export const publishEvent = async (
+  id: string,
+  userId: string,
+  userRole?: string,
+) => {
+  const event = await verifyEventOwnership(id, userId, userRole);
+
+  if (event.isDeleted) {
+    throw new Error("Cannot publish a deleted event");
+  }
+
+  if (event.status === "PUBLISHED") {
+    throw new Error("Event is already published");
+  }
+
   return prisma.event.update({
     where: { id },
     data: { status: "PUBLISHED" },
@@ -79,7 +125,21 @@ export const publishEvent = async (id: string) => {
 };
 
 // Cancel event - PATCH /api/v1/events/cancel/:id
-export const cancelEvent = async (id: string) => {
+export const cancelEvent = async (
+  id: string,
+  userId: string,
+  userRole?: string,
+) => {
+  const event = await verifyEventOwnership(id, userId, userRole);
+
+  if (event.isDeleted) {
+    throw new Error("Cannot cancel a deleted event");
+  }
+
+  if (event.status === "CANCELLED") {
+    throw new Error("Event is already cancelled");
+  }
+
   return prisma.event.update({
     where: { id },
     data: { status: "CANCELLED" },
@@ -87,15 +147,12 @@ export const cancelEvent = async (id: string) => {
 };
 
 // Soft delete event - PATCH /api/v1/events/soft-delete/:id
-export const softDeleteEvent = async (id: string) => {
-  const event = await prisma.event.findUnique({ where: { id } });
-
-  if (!event) {
-    throw new Prisma.PrismaClientKnownRequestError("Event not found", {
-      code: "P2025",
-      clientVersion: Prisma.prismaVersion.client,
-    });
-  }
+export const softDeleteEvent = async (
+  id: string,
+  userId: string,
+  userRole?: string,
+) => {
+  const event = await verifyEventOwnership(id, userId, userRole);
 
   if (event.isDeleted) {
     throw new Error("Event is already deleted");
@@ -108,7 +165,13 @@ export const softDeleteEvent = async (id: string) => {
 };
 
 // Restore event - PATCH /api/v1/events/restore/:id
-export const restoreEvent = async (id: string) => {
+export const restoreEvent = async (
+  id: string,
+  userId: string,
+  userRole?: string,
+) => {
+  await verifyEventOwnership(id, userId, userRole);
+
   return prisma.event.update({
     where: { id },
     data: { isDeleted: false },

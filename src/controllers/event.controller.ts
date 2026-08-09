@@ -149,41 +149,26 @@ export const updateEvent = async (
   res: Response,
 ): Promise<void> => {
   const { id } = req.params;
-  const { title, description, price, capacity, startDate, location, status } =
-    req.body;
+  const { title, description, price, capacity, startDate, location } = req.body;
 
-  const data: Prisma.EventUpdateInput = {
-    ...(title !== undefined && { title }),
-    ...(description !== undefined && { description }),
-    ...(price !== undefined && { price }),
-    ...(capacity !== undefined && { capacity }),
-    ...(startDate !== undefined && { startDate: new Date(startDate) }),
-    ...(location !== undefined && { location }),
-  };
+  const userId = req.user?.id;
+  const userRole = req.user?.role;
 
-  if (!status) {
-    res.status(400).json({
+  if (!userId) {
+    res.status(401).json({
       success: false,
-      message: "Status is required",
-    });
-    return;
-  }
-
-  if (status !== "DRAFT") {
-    res.status(403).json({
-      success: false,
-      message: "You are not authorized to update this event, contact the admin",
+      message: "Unauthorized: User not authenticated",
     });
     return;
   }
 
   if (
-    !data.title &&
-    !data.description &&
-    !data.price &&
-    !data.capacity &&
-    !data.startDate &&
-    !data.location
+    title === undefined &&
+    description === undefined &&
+    price === undefined &&
+    capacity === undefined &&
+    startDate === undefined &&
+    location === undefined
   ) {
     res.status(400).json({
       success: false,
@@ -193,8 +178,16 @@ export const updateEvent = async (
     return;
   }
 
+  const data: Prisma.EventUpdateInput = {};
+  if (title !== undefined) data.title = title;
+  if (description !== undefined) data.description = description;
+  if (price !== undefined) data.price = Number(price);
+  if (capacity !== undefined) data.capacity = Number(capacity);
+  if (startDate !== undefined) data.startDate = new Date(startDate);
+  if (location !== undefined) data.location = location;
+
   try {
-    const event = await eventService.updateEvent(id, data);
+    const event = await eventService.updateEvent(id, userId, userRole, data);
 
     res.status(200).json({
       success: true,
@@ -202,6 +195,33 @@ export const updateEvent = async (
       data: event,
     });
   } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      res.status(404).json({
+        success: false,
+        message: "Event not found",
+      });
+      return;
+    }
+
+    if (error instanceof Error && error.message.startsWith("Forbidden")) {
+      res.status(403).json({
+        success: false,
+        message: error.message,
+      });
+      return;
+    }
+
+    if (error instanceof Error && error.message.includes("Cannot")) {
+      res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+      return;
+    }
+
     console.error("Failed to update event:", error);
     res.status(500).json({
       success: false,
@@ -216,9 +236,19 @@ export const publishEvent = async (
   res: Response,
 ): Promise<void> => {
   const { id } = req.params;
+  const userId = req.user?.id;
+  const userRole = req.user?.role;
+
+  if (!userId) {
+    res.status(401).json({
+      success: false,
+      message: "Unauthorized: User not authenticated",
+    });
+    return;
+  }
 
   try {
-    const event = await eventService.publishEvent(id);
+    const event = await eventService.publishEvent(id, userId, userRole);
 
     res.status(200).json({
       success: true,
@@ -226,6 +256,33 @@ export const publishEvent = async (
       data: event,
     });
   } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      res.status(404).json({
+        success: false,
+        message: "Event not found",
+      });
+      return;
+    }
+
+    if (error instanceof Error && error.message.startsWith("Forbidden")) {
+      res.status(403).json({
+        success: false,
+        message: error.message,
+      });
+      return;
+    }
+
+    if (error instanceof Error && (error.message.includes("Cannot") || error.message.includes("already"))) {
+      res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+      return;
+    }
+
     console.error("Failed to publish event:", error);
     res.status(500).json({
       success: false,
@@ -240,9 +297,19 @@ export const cancelEvent = async (
   res: Response,
 ): Promise<void> => {
   const { id } = req.params;
+  const userId = req.user?.id;
+  const userRole = req.user?.role;
+
+  if (!userId) {
+    res.status(401).json({
+      success: false,
+      message: "Unauthorized: User not authenticated",
+    });
+    return;
+  }
 
   try {
-    const event = await eventService.cancelEvent(id);
+    const event = await eventService.cancelEvent(id, userId, userRole);
 
     res.status(200).json({
       success: true,
@@ -250,6 +317,33 @@ export const cancelEvent = async (
       data: event,
     });
   } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      res.status(404).json({
+        success: false,
+        message: "Event not found",
+      });
+      return;
+    }
+
+    if (error instanceof Error && error.message.startsWith("Forbidden")) {
+      res.status(403).json({
+        success: false,
+        message: error.message,
+      });
+      return;
+    }
+
+    if (error instanceof Error && (error.message.includes("Cannot") || error.message.includes("already"))) {
+      res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+      return;
+    }
+
     console.error("Failed to cancel event:", error);
     res.status(500).json({
       success: false,
@@ -264,9 +358,19 @@ export const softDeleteEvent = async (
   res: Response,
 ): Promise<void> => {
   const { id } = req.params;
+  const userId = req.user?.id;
+  const userRole = req.user?.role;
+
+  if (!userId) {
+    res.status(401).json({
+      success: false,
+      message: "Unauthorized: User not authenticated",
+    });
+    return;
+  }
 
   try {
-    const event = await eventService.softDeleteEvent(id);
+    const event = await eventService.softDeleteEvent(id, userId, userRole);
 
     res.status(200).json({
       success: true,
@@ -285,6 +389,22 @@ export const softDeleteEvent = async (
       return;
     }
 
+    if (error instanceof Error && error.message.startsWith("Forbidden")) {
+      res.status(403).json({
+        success: false,
+        message: error.message,
+      });
+      return;
+    }
+
+    if (error instanceof Error && error.message.includes("already")) {
+      res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+      return;
+    }
+
     console.error("Failed to delete event:", error);
     res.status(500).json({
       success: false,
@@ -299,9 +419,19 @@ export const restoreEvent = async (
   res: Response,
 ): Promise<void> => {
   const { id } = req.params;
+  const userId = req.user?.id;
+  const userRole = req.user?.role;
+
+  if (!userId) {
+    res.status(401).json({
+      success: false,
+      message: "Unauthorized: User not authenticated",
+    });
+    return;
+  }
 
   try {
-    const event = await eventService.restoreEvent(id);
+    const event = await eventService.restoreEvent(id, userId, userRole);
 
     res.status(200).json({
       success: true,
@@ -316,6 +446,14 @@ export const restoreEvent = async (
       res.status(404).json({
         success: false,
         message: "Event not found",
+      });
+      return;
+    }
+
+    if (error instanceof Error && error.message.startsWith("Forbidden")) {
+      res.status(403).json({
+        success: false,
+        message: error.message,
       });
       return;
     }
