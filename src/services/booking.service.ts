@@ -82,3 +82,11 @@ export const getBookingsByUser = async (skip = 0, take = 20) => {
   ]);
   return { bookings, total };
 };
+
+// Confirm booking - PATCH /api/v1/bookings/confirm/:id
+export const confirmBooking = async (id: string) => {
+  return prisma.booking.update({
+    where: { id },
+    data: { status: "CONFIRMED" },
+  });
+};

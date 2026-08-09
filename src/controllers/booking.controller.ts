@@ -127,3 +127,27 @@ export const getBookingsByUser = async (
     });
   }
 };
+
+// Confirm booking - PATCH /api/v1/bookings/confirm/:id
+export const confirmBooking = async (
+  req: Request<{ id: string }>,
+  res: Response,
+): Promise<void> => {
+  const { id } = req.params;
+
+  try {
+    const booking = await bookingService.confirmBooking(id);
+
+    res.status(200).json({
+      success: true,
+      message: "Booking confirmed successfully",
+      data: booking,
+    });
+  } catch (error) {
+    console.error("Failed to confirm booking:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to confirm booking",
+    });
+  }
+};
