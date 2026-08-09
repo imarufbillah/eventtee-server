@@ -69,3 +69,11 @@ export const updateEvent = async (
 ) => {
   return prisma.event.update({ where: { id }, data });
 };
+
+// Publish event - PATCH /api/v1/events/publish/:id
+export const publishEvent = async (id: string) => {
+  return prisma.event.update({
+    where: { id },
+    data: { status: "PUBLISHED" },
+  });
+};

@@ -163,3 +163,27 @@ export const updateEvent = async (
     });
   }
 };
+
+// Publish event - PATCH /api/v1/events/publish/:id
+export const publishEvent = async (
+  req: Request<{ id: string }>,
+  res: Response,
+): Promise<void> => {
+  const { id } = req.params;
+
+  try {
+    const event = await eventService.publishEvent(id);
+
+    res.status(200).json({
+      success: true,
+      message: "Event published successfully",
+      data: event,
+    });
+  } catch (error) {
+    console.error("Failed to publish event:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to publish event",
+    });
+  }
+};
