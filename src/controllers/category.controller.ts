@@ -30,6 +30,32 @@ export const getCategories = async (
   }
 };
 
+// Get active categories - GET /api/v1/categories/active
+export const getActiveCategories = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const page = Math.max(1, Number(req.query["page"]) || 1);
+    const limit = Math.min(100, Math.max(1, Number(req.query["limit"]) || 20));
+    const skip = (page - 1) * limit;
+
+    const categories = await categoryService.getActiveCategories(skip, limit);
+
+    res.status(200).json({
+      success: true,
+      message: "Active categories fetched successfully",
+      data: categories,
+    });
+  } catch (error) {
+    console.error("Failed to get active categories:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch active categories",
+    });
+  }
+};
+
 // Create category - POST /api/v1/categories
 export const createCategory = async (
   req: Request,
