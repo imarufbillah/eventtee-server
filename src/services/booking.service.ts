@@ -47,9 +47,61 @@ export const getActiveBookings = async (skip = 0, take = 20) => {
   return { bookings, total };
 };
 
+export interface CreateBookingInput {
+  userId: string;
+  eventId: string;
+  seats: number;
+}
+
 // Create booking - POST /api/v1/bookings
-export const createBooking = async (data: Prisma.BookingCreateInput) => {
-  return prisma.booking.create({ data });
+export const createBooking = async ({
+  userId,
+  eventId,
+  seats,
+}: CreateBookingInput) => {
+  return prisma.$transaction(async (tx) => {
+    const event = await tx.event.findUnique({
+      where: { id: eventId },
+    });
+
+    if (!event || event.isDeleted) {
+      throw new Error("Event not found or unavailable");
+    }
+
+    if (event.status !== "PUBLISHED") {
+      throw new Error("Cannot book seats for an event that is not PUBLISHED");
+    }
+
+    const availableSeats = event.capacity - event.bookedSeats;
+    if (seats > availableSeats) {
+      throw new Error(
+        `Not enough seats available. Requested: ${seats}, Available: ${Math.max(0, availableSeats)}`,
+      );
+    }
+
+    const totalPrice = new Prisma.Decimal(event.price).mul(seats);
+
+    const booking = await tx.booking.create({
+      data: {
+        seats,
+        totalPrice,
+        status: "PENDING",
+        user: { connect: { id: userId } },
+        event: { connect: { id: eventId } },
+      },
+    });
+
+    await tx.event.update({
+      where: { id: eventId },
+      data: {
+        bookedSeats: {
+          increment: seats,
+        },
+      },
+    });
+
+    return booking;
+  });
 };
 
 // Cancel booking - PATCH /api/v1/bookings/cancel/:id

@@ -1,5 +1,4 @@
 import type { Request, Response } from "express";
-import { Prisma } from "../generated/prisma/client.js";
 import * as bookingService from "../services/booking.service.js";
 
 // Get bookings - GET /api/v1/bookings
@@ -59,17 +58,60 @@ export const createBooking = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
-  try {
-    const data: Prisma.BookingCreateInput = req.body;
+  const userId = req.user?.id;
+  const { eventId, seats } = req.body;
 
-    const booking = await bookingService.createBooking(data);
+  if (!userId) {
+    res.status(401).json({
+      success: false,
+      message: "Unauthorized: User not authenticated",
+    });
+    return;
+  }
+
+  if (!eventId || typeof eventId !== "string") {
+    res.status(400).json({
+      success: false,
+      message: "eventId is required",
+    });
+    return;
+  }
+
+  const parsedSeats = Number(seats);
+  if (isNaN(parsedSeats) || parsedSeats <= 0) {
+    res.status(400).json({
+      success: false,
+      message: "seats must be a positive integer",
+    });
+    return;
+  }
+
+  try {
+    const booking = await bookingService.createBooking({
+      userId,
+      eventId,
+      seats: parsedSeats,
+    });
 
     res.status(201).json({
       success: true,
-      message: "Booking created successfully",
+      message: "Booking created successfully as PENDING",
       data: booking,
     });
   } catch (error) {
+    if (
+      error instanceof Error &&
+      (error.message.includes("Not enough seats") ||
+        error.message.includes("not PUBLISHED") ||
+        error.message.includes("unavailable"))
+    ) {
+      res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+      return;
+    }
+
     console.error("Failed to create booking:", error);
     res.status(500).json({
       success: false,
