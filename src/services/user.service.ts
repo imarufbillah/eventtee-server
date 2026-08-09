@@ -7,7 +7,13 @@ export const getUsers = async (skip = 0, take = 20) => {
     prisma.user.findMany({
       skip,
       take,
-      select: { id: true, name: true, image: true, email: true },
+      select: {
+        id: true,
+        name: true,
+        image: true,
+        email: true,
+        isDeleted: true,
+      },
     }),
     prisma.user.count(),
   ]);
