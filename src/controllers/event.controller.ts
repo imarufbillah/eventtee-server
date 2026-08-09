@@ -96,3 +96,37 @@ export const createEvent = async (
     });
   }
 };
+
+// Update event - PATCH /api/v1/events/:id
+export const updateEvent = async (
+  req: Request<{ id: string }>,
+  res: Response,
+): Promise<void> => {
+  const { id } = req.params;
+  const { title, description, price, capacity, startDate, location } = req.body;
+
+  const data: Prisma.EventUpdateInput = {
+    ...(title !== undefined && { title }),
+    ...(description !== undefined && { description }),
+    ...(price !== undefined && { price }),
+    ...(capacity !== undefined && { capacity }),
+    ...(startDate !== undefined && { startDate: new Date(startDate) }),
+    ...(location !== undefined && { location }),
+  };
+
+  try {
+    const event = await eventService.updateEvent(id, data);
+
+    res.status(200).json({
+      success: true,
+      message: "Event updated successfully",
+      data: event,
+    });
+  } catch (error) {
+    console.error("Failed to update event:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to update event",
+    });
+  }
+};

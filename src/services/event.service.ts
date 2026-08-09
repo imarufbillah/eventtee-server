@@ -61,3 +61,11 @@ export const getActiveEvents = async (skip = 0, take = 20) => {
 export const createEvent = async (data: Prisma.EventCreateInput) => {
   return prisma.event.create({ data });
 };
+
+// Update event - PATCH /api/v1/events/:id
+export const updateEvent = async (
+  id: string,
+  data: Prisma.EventUpdateInput,
+) => {
+  return prisma.event.update({ where: { id }, data });
+};
