@@ -160,3 +160,38 @@ export const softDeleteReview = async (
     });
   }
 };
+
+// Restore review - PATCH /api/v1/reviews/restore/:id
+export const restoreReview = async (
+  req: Request<{ id: string }>,
+  res: Response,
+): Promise<void> => {
+  const { id } = req.params;
+
+  try {
+    const review = await reviewService.restoreReview(id);
+
+    res.status(200).json({
+      success: true,
+      message: "Review restored successfully",
+      data: review,
+    });
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      res.status(404).json({
+        success: false,
+        message: "Review not found",
+      });
+      return;
+    }
+
+    console.error("Failed to restore review:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to restore review",
+    });
+  }
+};

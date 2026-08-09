@@ -9,5 +9,6 @@ router.post("/", reviewController.createReview);
 router.patch("/:id", reviewController.updateReview);
 router.delete("/:id", reviewController.deleteReview);
 router.patch("/soft-delete/:id", reviewController.softDeleteReview);
+router.patch("/restore/:id", reviewController.restoreReview);
 
 export default router;

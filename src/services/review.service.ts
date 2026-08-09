@@ -83,3 +83,11 @@ export const softDeleteReview = async (id: string) => {
     data: { isDeleted: true },
   });
 };
+
+// Restore review - PATCH /api/v1/reviews/restore/:id
+export const restoreReview = async (id: string) => {
+  return prisma.review.update({
+    where: { id },
+    data: { isDeleted: false },
+  });
+};
