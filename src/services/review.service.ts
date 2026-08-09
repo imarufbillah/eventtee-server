@@ -62,3 +62,24 @@ export const updateReview = async (
 export const deleteReview = async (id: string) => {
   return prisma.review.delete({ where: { id } });
 };
+
+// Soft delete review - PATCH /api/v1/reviews/soft-delete/:id
+export const softDeleteReview = async (id: string) => {
+  const review = await prisma.review.findUnique({ where: { id } });
+
+  if (!review) {
+    throw new Prisma.PrismaClientKnownRequestError("Review not found", {
+      code: "P2025",
+      clientVersion: Prisma.prismaVersion.client,
+    });
+  }
+
+  if (review.isDeleted) {
+    throw new Error("Review is already deleted");
+  }
+
+  return prisma.review.update({
+    where: { id },
+    data: { isDeleted: true },
+  });
+};

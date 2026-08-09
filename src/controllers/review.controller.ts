@@ -125,3 +125,38 @@ export const deleteReview = async (
     });
   }
 };
+
+// Soft delete review - PATCH /api/v1/reviews/soft-delete/:id
+export const softDeleteReview = async (
+  req: Request<{ id: string }>,
+  res: Response,
+): Promise<void> => {
+  const { id } = req.params;
+
+  try {
+    const review = await reviewService.softDeleteReview(id);
+
+    res.status(200).json({
+      success: true,
+      message: "Review deleted successfully",
+      data: review,
+    });
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      res.status(404).json({
+        success: false,
+        message: "Review not found",
+      });
+      return;
+    }
+
+    console.error("Failed to delete review:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to delete review",
+    });
+  }
+};

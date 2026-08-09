@@ -8,5 +8,6 @@ router.get("/active", reviewController.getActiveReviews);
 router.post("/", reviewController.createReview);
 router.patch("/:id", reviewController.updateReview);
 router.delete("/:id", reviewController.deleteReview);
+router.patch("/soft-delete/:id", reviewController.softDeleteReview);
 
 export default router;
