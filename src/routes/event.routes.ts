@@ -8,14 +8,14 @@ const router = Router();
 router.get(
   "/",
   authenticate,
-  authorize("USER", "ADMIN", "ORGANIZER"),
+  authorize("USER", "ORGANIZER", "ADMIN"),
   eventController.getEvents,
 );
 router.get("/active", eventController.getActiveEvents);
 router.post(
   "/",
   authenticate,
-  authorize("ORGANIZER"),
+  authorize("ORGANIZER", "ADMIN"),
   eventController.createEvent,
 );
 router.patch(
@@ -27,25 +27,25 @@ router.patch(
 router.patch(
   "/publish/:id",
   authenticate,
-  authorize("ORGANIZER"),
+  authorize("ORGANIZER", "ADMIN"),
   eventController.publishEvent,
 );
 router.patch(
   "/cancel/:id",
   authenticate,
-  authorize("ORGANIZER"),
+  authorize("ORGANIZER", "ADMIN"),
   eventController.cancelEvent,
 );
 router.patch(
   "/soft-delete/:id",
   authenticate,
-  authorize("ADMIN"),
+  authorize("ORGANIZER", "ADMIN"),
   eventController.softDeleteEvent,
 );
 router.patch(
   "/restore/:id",
   authenticate,
-  authorize("ADMIN"),
+  authorize("ORGANIZER", "ADMIN"),
   eventController.restoreEvent,
 );
 
