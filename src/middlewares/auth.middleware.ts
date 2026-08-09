@@ -23,10 +23,23 @@ export const authenticate = async (
 ): Promise<void> => {
   try {
     const authHeader = req.headers.authorization;
-    const token =
+    let token =
       authHeader && authHeader.startsWith("Bearer ")
         ? authHeader.split(" ")[1]
         : null;
+
+    if (!token && req.headers.cookie) {
+      const cookies = Object.fromEntries(
+        req.headers.cookie.split("; ").map((c) => {
+          const [key, ...v] = c.split("=");
+          return [key?.trim(), v.join("=")];
+        }),
+      );
+      token =
+        cookies["better-auth.session_data"] ||
+        cookies["better-auth.session_token"] ||
+        null;
+    }
 
     if (!token) {
       res.status(401).json({
