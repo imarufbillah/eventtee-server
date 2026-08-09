@@ -21,4 +21,19 @@ export const auth = betterAuth({
     },
   },
   plugins: [jwt()],
+  user: {
+    additionalFields: {
+      role: {
+        type: ["USER", "ORGANIZER", "ADMIN"],
+        required: true,
+        defaultValue: "USER",
+        input: false,
+      },
+      isDeleted: {
+        type: "boolean",
+        required: false,
+        defaultValue: false,
+      },
+    },
+  },
 });

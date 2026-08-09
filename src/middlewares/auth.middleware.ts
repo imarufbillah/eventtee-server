@@ -39,24 +39,26 @@ export const authenticate = async (
     const secret = new TextEncoder().encode(process.env["BETTER_AUTH_SECRET"]);
     const { payload } = await jwtVerify(token, secret);
 
-    const userId = String(payload.sub ?? payload["id"] ?? "");
+    // Check if payload contains a nested 'user' object (Better Auth cookie cache format)
+    const rawUser =
+      typeof payload["user"] === "object" && payload["user"] !== null
+        ? (payload["user"] as Record<string, unknown>)
+        : payload;
 
-    const userObj: NonNullable<Express.Request["user"]> = {
+    const userId = String(
+      rawUser["id"] ?? rawUser["sub"] ?? payload.sub ?? payload["id"] ?? "",
+    );
+    const email = typeof rawUser["email"] === "string" ? rawUser["email"] : undefined;
+    const name = typeof rawUser["name"] === "string" ? rawUser["name"] : undefined;
+    const role = typeof rawUser["role"] === "string" ? rawUser["role"] : undefined;
+
+    req.user = {
       id: userId,
-      ...payload,
+      ...(email && { email }),
+      ...(name && { name }),
+      ...(role && { role }),
+      ...rawUser,
     };
-
-    if (typeof payload["email"] === "string") {
-      userObj.email = payload["email"];
-    }
-    if (typeof payload["name"] === "string") {
-      userObj.name = payload["name"];
-    }
-    if (typeof payload["role"] === "string") {
-      userObj.role = payload["role"];
-    }
-
-    req.user = userObj;
 
     next();
   } catch (error) {
