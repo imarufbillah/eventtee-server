@@ -149,9 +149,25 @@ export const cancelBooking = async (
 };
 
 // Get bookings by user - GET /api/v1/bookings/user/:userId
-export const getBookingsByUser = async (skip = 0, take = 20) => {
+export const getBookingsByUser = async (
+  targetUserId: string,
+  authUserId: string,
+  authUserRole?: string,
+  skip = 0,
+  take = 20,
+) => {
+  if (authUserId !== targetUserId && authUserRole !== "ADMIN") {
+    throw new Error("Forbidden: You can only view your own booking history");
+  }
+
+  const where: Prisma.BookingWhereInput = {
+    userId: targetUserId,
+    isDeleted: false,
+  };
+
   const [bookings, total] = await Promise.all([
     prisma.booking.findMany({
+      where,
       skip,
       take,
       select: {
@@ -164,9 +180,21 @@ export const getBookingsByUser = async (skip = 0, take = 20) => {
         eventId: true,
         createdAt: true,
         updatedAt: true,
+        event: {
+          select: {
+            id: true,
+            title: true,
+            startDate: true,
+            location: true,
+            status: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
       },
     }),
-    prisma.booking.count(),
+    prisma.booking.count({ where }),
   ]);
   return { bookings, total };
 };

@@ -187,12 +187,30 @@ export const getBookingsByUser = async (
   req: Request<{ userId: string }>,
   res: Response,
 ): Promise<void> => {
+  const { userId: targetUserId } = req.params;
+  const authUserId = req.user?.id;
+  const authUserRole = req.user?.role;
+
+  if (!authUserId) {
+    res.status(401).json({
+      success: false,
+      message: "Unauthorized: User not authenticated",
+    });
+    return;
+  }
+
   try {
     const page = Math.max(1, Number(req.query["page"]) || 1);
     const limit = Math.min(100, Math.max(1, Number(req.query["limit"]) || 20));
     const skip = (page - 1) * limit;
 
-    const bookings = await bookingService.getBookingsByUser(skip, limit);
+    const bookings = await bookingService.getBookingsByUser(
+      targetUserId,
+      authUserId,
+      authUserRole,
+      skip,
+      limit,
+    );
 
     res.status(200).json({
       success: true,
@@ -200,10 +218,18 @@ export const getBookingsByUser = async (
       data: bookings,
     });
   } catch (error) {
-    console.error("Failed to get bookings:", error);
+    if (error instanceof Error && error.message.startsWith("Forbidden")) {
+      res.status(403).json({
+        success: false,
+        message: error.message,
+      });
+      return;
+    }
+
+    console.error("Failed to get user bookings:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to fetch bookings",
+      message: "Failed to fetch user bookings",
     });
   }
 };
