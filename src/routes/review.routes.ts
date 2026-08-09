@@ -28,7 +28,7 @@ router.delete(
 router.patch(
   "/soft-delete/:id",
   authenticate,
-  authorize("ADMIN"),
+  authorize("USER", "ORGANIZER", "ADMIN"),
   reviewController.softDeleteReview,
 );
 router.patch(
