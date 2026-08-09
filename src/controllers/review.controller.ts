@@ -28,6 +28,32 @@ export const getReviews = async (
   }
 };
 
+// Get active reviews - GET /api/v1/reviews/active
+export const getActiveReviews = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const page = Math.max(1, Number(req.query["page"]) || 1);
+    const limit = Math.min(100, Math.max(1, Number(req.query["limit"]) || 20));
+    const skip = (page - 1) * limit;
+
+    const reviews = await reviewService.getActiveReviews(skip, limit);
+
+    res.status(200).json({
+      success: true,
+      message: "Active reviews fetched successfully",
+      data: reviews,
+    });
+  } catch (error) {
+    console.error("Failed to get active reviews:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch active reviews",
+    });
+  }
+};
+
 // Create review - POST /api/v1/reviews
 export const createReview = async (
   req: Request,
