@@ -54,10 +54,31 @@ export const getEvents = async (skip = 0, take = 20) => {
 };
 
 // Get active events - GET /api/v1/events/active
-export const getActiveEvents = async (skip = 0, take = 20) => {
+export const getActiveEvents = async (
+  skip = 0,
+  take = 20,
+  filter?: { categoryId?: string; search?: string },
+) => {
+  const where: Prisma.EventWhereInput = {
+    isDeleted: false,
+    status: "PUBLISHED",
+  };
+
+  if (filter?.categoryId) {
+    where.categoryId = filter.categoryId;
+  }
+
+  if (filter?.search && filter.search.trim()) {
+    const searchTerm = filter.search.trim();
+    where.OR = [
+      { title: { contains: searchTerm, mode: "insensitive" } },
+      { description: { contains: searchTerm, mode: "insensitive" } },
+    ];
+  }
+
   const [events, total] = await Promise.all([
     prisma.event.findMany({
-      where: { isDeleted: false },
+      where,
       skip,
       take,
       select: {
@@ -74,11 +95,23 @@ export const getActiveEvents = async (skip = 0, take = 20) => {
         updatedAt: true,
         categoryId: true,
         organizerId: true,
+        category: {
+          select: { id: true, name: true, slug: true },
+        },
+      },
+      orderBy: {
+        startDate: "asc",
       },
     }),
-    prisma.event.count({ where: { isDeleted: false } }),
+    prisma.event.count({ where }),
   ]);
-  return { events, total };
+
+  const formattedEvents = events.map((event) => ({
+    ...event,
+    remainingSeats: Math.max(0, event.capacity - event.bookedSeats),
+  }));
+
+  return { events: formattedEvents, total };
 };
 
 // Create event - POST /api/v1/events

@@ -35,7 +35,14 @@ export const getActiveEvents = async (
     const limit = Math.min(100, Math.max(1, Number(req.query["limit"]) || 20));
     const skip = (page - 1) * limit;
 
-    const events = await eventService.getActiveEvents(skip, limit);
+    const categoryId = typeof req.query["categoryId"] === "string" ? req.query["categoryId"] : undefined;
+    const search = typeof req.query["search"] === "string" ? req.query["search"] : undefined;
+
+    const filter: { categoryId?: string; search?: string } = {};
+    if (categoryId) filter.categoryId = categoryId;
+    if (search) filter.search = search;
+
+    const events = await eventService.getActiveEvents(skip, limit, filter);
 
     res.status(200).json({
       success: true,
