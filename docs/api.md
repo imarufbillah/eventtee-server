@@ -9,9 +9,11 @@ Complete REST API reference for **Eventtee Server**, built with Express 5, TypeS
 The Eventtee API provides a comprehensive backend platform for managing event ticketing, category taxonomies, seat capacity reservations, attendee bookings, user reviews, and administrator oversight.
 
 ### Base URL
+
 ```text
 http://localhost:5000
 ```
+
 - **Auth Endpoint Prefix:** `/api/auth`
 - **REST API v1 Prefix:** `/api/v1`
 
@@ -22,24 +24,28 @@ http://localhost:5000
 Authentication is managed via **Better Auth** with JWT session caching.
 
 ### Authentication Credentials
+
 Requests to protected endpoints require authentication via one of two methods:
+
 1. **HTTP Bearer Header:** `Authorization: Bearer <jwt_token>`
 2. **HTTP Cookies:** Browser cookie containing `better-auth.session_data` or `better-auth.session_token`.
 
 ### Role-Based Access Control (RBAC)
+
 The API enforces strict role permissions via custom authorization middleware (`authorize(...allowedRoles)`):
 
-| Role | Access Description |
-|---|---|
-| **`USER`** | Default role. Can view active events, manage own user profile, create bookings, cancel own bookings, and submit reviews for completed events. |
-| **`ORGANIZER`** | Can create and manage own events (`DRAFT`, `PUBLISHED`, `CANCELLED`), view event bookings, and confirm attendee bookings. |
-| **`ADMIN`** | System superuser. Can view all users, manage user roles, manage categories, override event & review ownership, soft-delete, and restore system resources. |
+| Role            | Access Description                                                                                                                                        |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`USER`**      | Default role. Can view active events, manage own user profile, create bookings, cancel own bookings, and submit reviews for completed events.             |
+| **`ORGANIZER`** | Can create and manage own events (`DRAFT`, `PUBLISHED`, `CANCELLED`), view event bookings, and confirm attendee bookings.                                 |
+| **`ADMIN`**     | System superuser. Can view all users, manage user roles, manage categories, override event & review ownership, soft-delete, and restore system resources. |
 
 ---
 
 ## 📐 Response Conventions
 
 ### Success Response Format
+
 All successful responses return HTTP `200 OK` or `201 Created` with a standardized JSON structure:
 
 ```json
@@ -51,6 +57,7 @@ All successful responses return HTTP `200 OK` or `201 Created` with a standardiz
 ```
 
 ### Error Response Format
+
 All client or server errors return appropriate HTTP status codes (`400`, `401`, `403`, `404`, `409`, `500`) with a standardized JSON structure:
 
 ```json
@@ -67,6 +74,7 @@ All client or server errors return appropriate HTTP status codes (`400`, `401`, 
 Managed directly by Better Auth engine.
 
 ### 1.1 Sign Up with Email
+
 Registers a new user account. Role defaults to `USER`. Setting `role` to `ORGANIZER` is allowed during registration; all other values default to `USER`.
 
 - **HTTP Method:** `POST`
@@ -98,6 +106,7 @@ Registers a new user account. Role defaults to `USER`. Setting `role` to `ORGANI
   ```
 
 ### 1.2 Sign In with Email
+
 Authenticates an existing user and returns session data & JWT cookie/token.
 
 - **HTTP Method:** `POST`
@@ -113,6 +122,7 @@ Authenticates an existing user and returns session data & JWT cookie/token.
 - **Success Code:** `200 OK`
 
 ### 1.3 Sign Out
+
 Revokes current user session and clears session cookies.
 
 - **HTTP Method:** `POST`
@@ -120,6 +130,7 @@ Revokes current user session and clears session cookies.
 - **Authentication:** Required
 
 ### 1.4 Get Active Session
+
 Retrieves the active session information and authenticated user profile.
 
 - **HTTP Method:** `GET`
@@ -131,6 +142,7 @@ Retrieves the active session information and authenticated user profile.
 ## 👤 2. User Endpoints (`/api/v1/users`)
 
 ### 2.1 Get Current User Profile
+
 Retrieves the authenticated user's own profile.
 
 - **HTTP Method:** `GET`
@@ -158,6 +170,7 @@ Retrieves the authenticated user's own profile.
   ```
 
 ### 2.2 Update User Profile
+
 Updates user profile information (`name`, `image`). Users can update their own profile; `ADMIN` users can update any user profile.
 
 - **HTTP Method:** `PATCH`
@@ -180,6 +193,7 @@ Updates user profile information (`name`, `image`). Users can update their own p
   - `404 Not Found`: User not found.
 
 ### 2.3 Get All Users
+
 Retrieves a paginated list of all users.
 
 - **HTTP Method:** `GET`
@@ -211,6 +225,7 @@ Retrieves a paginated list of all users.
   ```
 
 ### 2.4 Get Active Users
+
 Retrieves a paginated list of active users (`isDeleted: false`).
 
 - **HTTP Method:** `GET`
@@ -221,6 +236,7 @@ Retrieves a paginated list of active users (`isDeleted: false`).
 - **Success Code:** `200 OK`
 
 ### 2.5 Soft-Delete User
+
 Marks a user account as deleted (`isDeleted: true`).
 
 - **HTTP Method:** `PATCH`
@@ -233,6 +249,7 @@ Marks a user account as deleted (`isDeleted: true`).
   - `404 Not Found`: User not found.
 
 ### 2.6 Restore User
+
 Restores a soft-deleted user account (`isDeleted: false`).
 
 - **HTTP Method:** `PATCH`
@@ -246,6 +263,7 @@ Restores a soft-deleted user account (`isDeleted: false`).
 ## 🏷️ 3. Category Endpoints (`/api/v1/categories`)
 
 ### 3.1 Get All Categories
+
 Retrieves all categories.
 
 - **HTTP Method:** `GET`
@@ -255,6 +273,7 @@ Retrieves all categories.
 - **Success Code:** `200 OK`
 
 ### 3.2 Get Active Categories
+
 Retrieves all active categories (`isDeleted: false`).
 
 - **HTTP Method:** `GET`
@@ -264,6 +283,7 @@ Retrieves all active categories (`isDeleted: false`).
 - **Success Code:** `200 OK`
 
 ### 3.3 Create Category
+
 Creates a new event category. Auto-generates `slug` from `name` if omitted.
 
 - **HTTP Method:** `POST`
@@ -283,6 +303,7 @@ Creates a new event category. Auto-generates `slug` from `name` if omitted.
   - `409 Conflict`: Category with this name or slug already exists (`P2002`).
 
 ### 3.4 Update Category
+
 Updates category name or slug.
 
 - **HTTP Method:** `PATCH`
@@ -302,6 +323,7 @@ Updates category name or slug.
   - `409 Conflict`: Category with this name or slug already exists (`P2002`).
 
 ### 3.5 Soft-Delete Category
+
 Soft-deletes a category. Guaranteed to fail if active published events reference this category.
 
 - **HTTP Method:** `PATCH`
@@ -314,6 +336,7 @@ Soft-deletes a category. Guaranteed to fail if active published events reference
   - `404 Not Found`: Category not found.
 
 ### 3.6 Restore Category
+
 Restores a soft-deleted category.
 
 - **HTTP Method:** `PATCH`
@@ -327,6 +350,7 @@ Restores a soft-deleted category.
 ## 📅 4. Event Endpoints (`/api/v1/events`)
 
 ### 4.1 Search & Filter Active Events
+
 Retrieves active, published events sorted by `startDate: "asc"`, with keyword search, category filter, and calculated `remainingSeats`.
 
 - **HTTP Method:** `GET`
@@ -373,6 +397,7 @@ Retrieves active, published events sorted by `startDate: "asc"`, with keyword se
   ```
 
 ### 4.2 Get Single Event Details
+
 Retrieves detailed information for a specific event, including category, organizer profile, active reviews, `remainingSeats`, and calculated `averageRating`.
 
 - **HTTP Method:** `GET`
@@ -396,8 +421,17 @@ Retrieves detailed information for a specific event, including category, organiz
       "remainingSeats": 155,
       "averageRating": 4.8,
       "totalReviews": 12,
-      "category": { "id": "cat-123", "name": "Technology", "slug": "technology" },
-      "organizer": { "id": "usr-456", "name": "Tech Corp", "email": "info@techcorp.com", "image": null },
+      "category": {
+        "id": "cat-123",
+        "name": "Technology",
+        "slug": "technology"
+      },
+      "organizer": {
+        "id": "usr-456",
+        "name": "Tech Corp",
+        "email": "info@techcorp.com",
+        "image": null
+      },
       "reviews": [
         {
           "id": "rev-789",
@@ -412,6 +446,7 @@ Retrieves detailed information for a specific event, including category, organiz
   ```
 
 ### 4.3 Get Event Reviews
+
 Retrieves reviews for an event with `averageRating` and `totalReviews`.
 
 - **HTTP Method:** `GET`
@@ -422,6 +457,7 @@ Retrieves reviews for an event with `averageRating` and `totalReviews`.
 - **Success Code:** `200 OK`
 
 ### 4.4 Create Event
+
 Creates a new event. The `organizerId` is automatically set to `req.user.id` and `status` defaults to `DRAFT`.
 
 - **HTTP Method:** `POST`
@@ -445,6 +481,7 @@ Creates a new event. The `organizerId` is automatically set to `req.user.id` and
   - `400 Bad Request`: Missing required fields, invalid price/capacity, or invalid `categoryId`.
 
 ### 4.5 Get All Events
+
 Retrieves all events across all statuses.
 
 - **HTTP Method:** `GET`
@@ -455,6 +492,7 @@ Retrieves all events across all statuses.
 - **Success Code:** `200 OK`
 
 ### 4.6 Get Event Bookings (Organizer View)
+
 Retrieves booking list for an event organized by the requesting user (or Admin).
 
 - **HTTP Method:** `GET`
@@ -466,6 +504,7 @@ Retrieves booking list for an event organized by the requesting user (or Admin).
   - `403 Forbidden`: Requesting user is not the organizer of this event.
 
 ### 4.7 Update Event
+
 Updates event properties. Requires event ownership (`organizerId === req.user.id`) or `ADMIN` role.
 
 - **HTTP Method:** `PATCH`
@@ -474,6 +513,7 @@ Updates event properties. Requires event ownership (`organizerId === req.user.id
 - **Roles:** `ORGANIZER`, `ADMIN`
 
 ### 4.8 Publish Event
+
 Transitions event status to `PUBLISHED`. Requires event ownership or `ADMIN`.
 
 - **HTTP Method:** `PATCH`
@@ -482,6 +522,7 @@ Transitions event status to `PUBLISHED`. Requires event ownership or `ADMIN`.
 - **Roles:** `ORGANIZER`, `ADMIN`
 
 ### 4.9 Cancel Event
+
 Transitions event status to `CANCELLED`. Requires event ownership or `ADMIN`.
 
 - **HTTP Method:** `PATCH`
@@ -490,6 +531,7 @@ Transitions event status to `CANCELLED`. Requires event ownership or `ADMIN`.
 - **Roles:** `ORGANIZER`, `ADMIN`
 
 ### 4.10 Soft-Delete Event
+
 Soft-deletes an event (`isDeleted: true`). Requires event ownership or `ADMIN`.
 
 - **HTTP Method:** `PATCH`
@@ -498,6 +540,7 @@ Soft-deletes an event (`isDeleted: true`). Requires event ownership or `ADMIN`.
 - **Roles:** `ORGANIZER`, `ADMIN`
 
 ### 4.11 Restore Event
+
 Restores a soft-deleted event (`isDeleted: false`). Requires event ownership or `ADMIN`.
 
 - **HTTP Method:** `PATCH`
@@ -510,6 +553,7 @@ Restores a soft-deleted event (`isDeleted: false`). Requires event ownership or 
 ## 🎟️ 5. Booking Endpoints (`/api/v1/bookings`)
 
 ### 5.1 Create Booking
+
 Creates a ticket booking using an atomic `prisma.$transaction`. Validates that the event is `PUBLISHED`, check capacity (`bookedSeats + seats <= capacity`), calculates `totalPrice = price * seats`, sets status to `PENDING`, and increments `bookedSeats`.
 
 - **HTTP Method:** `POST`
@@ -529,6 +573,7 @@ Creates a ticket booking using an atomic `prisma.$transaction`. Validates that t
   - `401 Unauthorized`: Authentication missing.
 
 ### 5.2 Get User Booking History
+
 Retrieves booking history for a specific user. Users can only view their own history; `ADMIN` users can view any user's history. Includes event summary details.
 
 - **HTTP Method:** `GET`
@@ -542,6 +587,7 @@ Retrieves booking history for a specific user. Users can only view their own his
   - `403 Forbidden`: Attempting to view another user's booking history without `ADMIN` role.
 
 ### 5.3 Cancel Booking
+
 Cancels a booking in an atomic `prisma.$transaction`. Verifies booking ownership (`booking.userId === req.user.id`) or `ADMIN` role, updates status to `CANCELLED`, and releases seats back to the event (`decrement: booking.seats`).
 
 - **HTTP Method:** `PATCH`
@@ -555,6 +601,7 @@ Cancels a booking in an atomic `prisma.$transaction`. Verifies booking ownership
   - `403 Forbidden`: Attempting to cancel another user's booking.
 
 ### 5.4 Confirm Booking
+
 Confirms a pending booking (`status = CONFIRMED`). Verifies that the requesting user is the organizer of the event (`event.organizerId === req.user.id`) or `ADMIN`.
 
 - **HTTP Method:** `PATCH`
@@ -565,6 +612,7 @@ Confirms a pending booking (`status = CONFIRMED`). Verifies that the requesting 
 - **Success Code:** `200 OK`
 
 ### 5.5 Get All Bookings
+
 Retrieves a paginated list of all bookings.
 
 - **HTTP Method:** `GET`
@@ -573,6 +621,7 @@ Retrieves a paginated list of all bookings.
 - **Roles:** `USER`, `ORGANIZER`, `ADMIN`
 
 ### 5.6 Get Active Bookings
+
 Retrieves active bookings (`isDeleted: false`).
 
 - **HTTP Method:** `GET`
@@ -585,7 +634,9 @@ Retrieves active bookings (`isDeleted: false`).
 ## ⭐ 6. Review Endpoints (`/api/v1/reviews`)
 
 ### 6.1 Create Review
+
 Submits a review for an event. Enforces eligibility rules:
+
 1. Event status MUST be `COMPLETED`.
 2. Requesting user MUST have a `CONFIRMED` booking for the event.
 3. User can submit only ONE review per event (`@@unique([userId, eventId])`).
@@ -608,6 +659,7 @@ Submits a review for an event. Enforces eligibility rules:
   - `403 Forbidden`: User does not have a `CONFIRMED` booking for this event.
 
 ### 6.2 Update Review
+
 Updates rating or comment for an existing review. Requires review ownership (`review.userId === req.user.id`) or `ADMIN`.
 
 - **HTTP Method:** `PATCH`
@@ -616,6 +668,7 @@ Updates rating or comment for an existing review. Requires review ownership (`re
 - **Roles:** `USER`, `ORGANIZER`, `ADMIN`
 
 ### 6.3 Delete Review (Hard Delete)
+
 Permanently deletes a review from the database. Requires review ownership or `ADMIN`.
 
 - **HTTP Method:** `DELETE`
@@ -624,6 +677,7 @@ Permanently deletes a review from the database. Requires review ownership or `AD
 - **Roles:** `USER`, `ORGANIZER`, `ADMIN`
 
 ### 6.4 Soft-Delete Review
+
 Marks a review as deleted (`isDeleted: true`). Requires review ownership or `ADMIN`.
 
 - **HTTP Method:** `PATCH`
@@ -632,6 +686,7 @@ Marks a review as deleted (`isDeleted: true`). Requires review ownership or `ADM
 - **Roles:** `USER`, `ORGANIZER`, `ADMIN`
 
 ### 6.5 Restore Review
+
 Restores a soft-deleted review (`isDeleted: false`).
 
 - **HTTP Method:** `PATCH`
@@ -640,6 +695,7 @@ Restores a soft-deleted review (`isDeleted: false`).
 - **Roles:** `ADMIN`
 
 ### 6.6 Get All Reviews
+
 Retrieves all reviews.
 
 - **HTTP Method:** `GET`
@@ -647,6 +703,7 @@ Retrieves all reviews.
 - **Authentication:** Public
 
 ### 6.7 Get Active Reviews
+
 Retrieves active reviews (`isDeleted: false`).
 
 - **HTTP Method:** `GET`
