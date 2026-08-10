@@ -45,13 +45,13 @@ All successful responses return HTTP `200 OK` or `201 Created` with a standardiz
 ```json
 {
   "success": true,
-  "message": "Resource action message",
+  "message": "Human-readable response message",
   "data": { ... }
 }
 ```
 
 ### Error Response Format
-All client or server errors return appropriate HTTP status codes (`400`, `401`, `403`, `404`, `500`) with a standardized JSON structure:
+All client or server errors return appropriate HTTP status codes (`400`, `401`, `403`, `404`, `409`, `500`) with a standardized JSON structure:
 
 ```json
 {
@@ -279,7 +279,8 @@ Creates a new event category. Auto-generates `slug` from `name` if omitted.
   ```
 - **Success Code:** `201 Created`
 - **Error Codes:**
-  - `400 Bad Request`: Category name missing or duplicate name/slug (`P2002`).
+  - `400 Bad Request`: Category name missing.
+  - `409 Conflict`: Category with this name or slug already exists (`P2002`).
 
 ### 3.4 Update Category
 Updates category name or slug.
@@ -295,6 +296,10 @@ Updates category name or slug.
   }
   ```
 - **Success Code:** `200 OK`
+- **Error Codes:**
+  - `400 Bad Request`: At least one field (name or slug) must be provided.
+  - `404 Not Found`: Category not found.
+  - `409 Conflict`: Category with this name or slug already exists (`P2002`).
 
 ### 3.5 Soft-Delete Category
 Soft-deletes a category. Guaranteed to fail if active published events reference this category.
@@ -322,7 +327,7 @@ Restores a soft-deleted category.
 ## 📅 4. Event Endpoints (`/api/v1/events`)
 
 ### 4.1 Search & Filter Active Events
-Retrieves active, published events with keyword search, category filter, and calculated `remainingSeats`.
+Retrieves active, published events sorted by `startDate: "asc"`, with keyword search, category filter, and calculated `remainingSeats`.
 
 - **HTTP Method:** `GET`
 - **Path:** `/api/v1/events/active`
@@ -351,6 +356,8 @@ Retrieves active, published events with keyword search, category filter, and cal
           "startDate": "2026-09-15T09:00:00.000Z",
           "location": "Convention Center",
           "status": "PUBLISHED",
+          "createdAt": "2026-08-10T00:00:00.000Z",
+          "updatedAt": "2026-08-10T00:00:00.000Z",
           "categoryId": "cat-123",
           "organizerId": "usr-456",
           "category": {
@@ -366,7 +373,7 @@ Retrieves active, published events with keyword search, category filter, and cal
   ```
 
 ### 4.2 Get Single Event Details
-Retrieves detailed information for a specific event, including category, organizer profile, reviews, `remainingSeats`, and calculated `averageRating`.
+Retrieves detailed information for a specific event, including category, organizer profile, active reviews, `remainingSeats`, and calculated `averageRating`.
 
 - **HTTP Method:** `GET`
 - **Path:** `/api/v1/events/:id`
@@ -434,6 +441,8 @@ Creates a new event. The `organizerId` is automatically set to `req.user.id` and
   }
   ```
 - **Success Code:** `201 Created`
+- **Error Codes:**
+  - `400 Bad Request`: Missing required fields, invalid price/capacity, or invalid `categoryId`.
 
 ### 4.5 Get All Events
 Retrieves all events across all statuses.
@@ -453,6 +462,8 @@ Retrieves booking list for an event organized by the requesting user (or Admin).
 - **Authentication:** Required
 - **Roles:** `ORGANIZER`, `ADMIN`
 - **Success Code:** `200 OK`
+- **Error Codes:**
+  - `403 Forbidden`: Requesting user is not the organizer of this event.
 
 ### 4.7 Update Event
 Updates event properties. Requires event ownership (`organizerId === req.user.id`) or `ADMIN` role.
@@ -518,7 +529,7 @@ Creates a ticket booking using an atomic `prisma.$transaction`. Validates that t
   - `401 Unauthorized`: Authentication missing.
 
 ### 5.2 Get User Booking History
-Retrieves booking history for a specific user. Users can only view their own history; `ADMIN` users can view any user's history.
+Retrieves booking history for a specific user. Users can only view their own history; `ADMIN` users can view any user's history. Includes event summary details.
 
 - **HTTP Method:** `GET`
 - **Path:** `/api/v1/bookings/user/:userId`
@@ -527,6 +538,8 @@ Retrieves booking history for a specific user. Users can only view their own his
 - **Path Parameters:** `userId` (string)
 - **Query Parameters:** `page`, `limit`
 - **Success Code:** `200 OK`
+- **Error Codes:**
+  - `403 Forbidden`: Attempting to view another user's booking history without `ADMIN` role.
 
 ### 5.3 Cancel Booking
 Cancels a booking in an atomic `prisma.$transaction`. Verifies booking ownership (`booking.userId === req.user.id`) or `ADMIN` role, updates status to `CANCELLED`, and releases seats back to the event (`decrement: booking.seats`).
