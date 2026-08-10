@@ -568,4 +568,59 @@ export const getEventBookings = async (
   }
 };
 
+// Get events created by an organizer - GET /api/v1/events/organizer/:organizerId
+export const getEventsByOrganizer = async (
+  req: Request<{ organizerId: string }>,
+  res: Response,
+): Promise<void> => {
+  const { organizerId } = req.params;
+  const authUserId = req.user?.id;
+  const authUserRole = req.user?.role;
+
+  if (!authUserId) {
+    res.status(401).json({
+      success: false,
+      message: "Unauthorized: User not authenticated",
+    });
+    return;
+  }
+
+  const targetOrganizerId = organizerId === "me" ? authUserId : organizerId;
+
+  try {
+    const page = Math.max(1, Number(req.query["page"]) || 1);
+    const limit = Math.min(100, Math.max(1, Number(req.query["limit"]) || 20));
+    const skip = (page - 1) * limit;
+
+    const data = await eventService.getEventsByOrganizer(
+      targetOrganizerId,
+      authUserId,
+      authUserRole,
+      skip,
+      limit,
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Organizer events fetched successfully",
+      data,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith("Forbidden")) {
+      res.status(403).json({
+        success: false,
+        message: error.message,
+      });
+      return;
+    }
+
+    console.error("Failed to get organizer events:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch organizer events",
+    });
+  }
+};
+
+
 

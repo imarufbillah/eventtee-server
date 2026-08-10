@@ -323,4 +323,64 @@ export const getEventBookings = async (
   };
 };
 
+// Get events created by a specific organizer - GET /api/v1/events/organizer/:organizerId
+export const getEventsByOrganizer = async (
+  targetOrganizerId: string,
+  authUserId: string,
+  authUserRole?: string,
+  skip = 0,
+  take = 20,
+) => {
+  if (authUserId !== targetOrganizerId && authUserRole !== "ADMIN") {
+    throw new Error("Forbidden: You can only view your own events");
+  }
+
+  const where: Prisma.EventWhereInput = {
+    organizerId: targetOrganizerId,
+    isDeleted: false,
+  };
+
+  const [events, total] = await Promise.all([
+    prisma.event.findMany({
+      where,
+      skip,
+      take,
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        price: true,
+        capacity: true,
+        bookedSeats: true,
+        startDate: true,
+        location: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        categoryId: true,
+        organizerId: true,
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    }),
+    prisma.event.count({ where }),
+  ]);
+
+  const formattedEvents = events.map((event) => ({
+    ...event,
+    remainingSeats: Math.max(0, event.capacity - event.bookedSeats),
+  }));
+
+  return { events: formattedEvents, total };
+};
+
+
 

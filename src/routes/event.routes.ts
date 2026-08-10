@@ -20,6 +20,12 @@ router.get(
   eventController.getEventBookings,
 );
 router.get("/:eventId/reviews", reviewController.getReviewsByEvent);
+router.get(
+  "/organizer/:organizerId",
+  authenticate,
+  authorize("ORGANIZER", "ADMIN"),
+  eventController.getEventsByOrganizer,
+);
 router.get("/:id", eventController.getEventById);
 router.post(
   "/",

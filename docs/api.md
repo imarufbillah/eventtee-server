@@ -480,18 +480,56 @@ Creates a new event. The `organizerId` is automatically set to `req.user.id` and
 - **Error Codes:**
   - `400 Bad Request`: Missing required fields, invalid price/capacity, or invalid `categoryId`.
 
-### 4.5 Get All Events
+### 4.6 Get Organizer Events
 
-Retrieves all events across all statuses.
+Retrieves a paginated list of all events created by a specific organizer across all statuses (`DRAFT`, `PUBLISHED`, `CANCELLED`, `COMPLETED`). Supports `me` parameter alias (e.g. `/api/v1/events/organizer/me`).
 
 - **HTTP Method:** `GET`
-- **Path:** `/api/v1/events`
+- **Path:** `/api/v1/events/organizer/:organizerId`
 - **Authentication:** Required
-- **Roles:** `USER`, `ORGANIZER`, `ADMIN`
+- **Roles:** `ORGANIZER`, `ADMIN`
+- **Path Parameters:**
+  - `organizerId` (string): Organizer User ID or `"me"`
 - **Query Parameters:** `page`, `limit`
 - **Success Code:** `200 OK`
+- **Success Response:**
+  ```json
+  {
+    "success": true,
+    "message": "Organizer events fetched successfully",
+    "data": {
+      "events": [
+        {
+          "id": "e9123456-789a-bcde-f012-34567890abcd",
+          "title": "Tech Conference 2026",
+          "description": "Annual developer summit",
+          "price": "99.99",
+          "capacity": 200,
+          "bookedSeats": 45,
+          "remainingSeats": 155,
+          "startDate": "2026-09-15T09:00:00.000Z",
+          "location": "Convention Center",
+          "status": "DRAFT",
+          "createdAt": "2026-08-10T00:00:00.000Z",
+          "updatedAt": "2026-08-10T00:00:00.000Z",
+          "categoryId": "cat-123",
+          "organizerId": "usr-456",
+          "category": {
+            "id": "cat-123",
+            "name": "Technology",
+            "slug": "technology"
+          }
+        }
+      ],
+      "total": 1
+    }
+  }
+  ```
+- **Error Codes:**
+  - `401 Unauthorized`: Authentication missing.
+  - `403 Forbidden`: Attempting to view another organizer's events without `ADMIN` role.
 
-### 4.6 Get Event Bookings (Organizer View)
+### 4.7 Get Event Bookings (Organizer View)
 
 Retrieves booking list for an event organized by the requesting user (or Admin).
 
