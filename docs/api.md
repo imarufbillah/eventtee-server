@@ -480,6 +480,17 @@ Creates a new event. The `organizerId` is automatically set to `req.user.id` and
 - **Error Codes:**
   - `400 Bad Request`: Missing required fields, invalid price/capacity, or invalid `categoryId`.
 
+### 4.5 Get All Events
+
+Retrieves all events across all statuses.
+
+- **HTTP Method:** `GET`
+- **Path:** `/api/v1/events`
+- **Authentication:** Required
+- **Roles:** `USER`, `ORGANIZER`, `ADMIN`
+- **Query Parameters:** `page`, `limit`
+- **Success Code:** `200 OK`
+
 ### 4.6 Get Organizer Events
 
 Retrieves a paginated list of all events created by a specific organizer across all statuses (`DRAFT`, `PUBLISHED`, `CANCELLED`, `COMPLETED`). Supports `me` parameter alias (e.g. `/api/v1/events/organizer/me`).
@@ -541,7 +552,7 @@ Retrieves booking list for an event organized by the requesting user (or Admin).
 - **Error Codes:**
   - `403 Forbidden`: Requesting user is not the organizer of this event.
 
-### 4.7 Update Event
+### 4.8 Update Event
 
 Updates event properties. Requires event ownership (`organizerId === req.user.id`) or `ADMIN` role.
 
@@ -550,7 +561,7 @@ Updates event properties. Requires event ownership (`organizerId === req.user.id
 - **Authentication:** Required
 - **Roles:** `ORGANIZER`, `ADMIN`
 
-### 4.8 Publish Event
+### 4.9 Publish Event
 
 Transitions event status to `PUBLISHED`. Requires event ownership or `ADMIN`.
 
@@ -559,7 +570,7 @@ Transitions event status to `PUBLISHED`. Requires event ownership or `ADMIN`.
 - **Authentication:** Required
 - **Roles:** `ORGANIZER`, `ADMIN`
 
-### 4.9 Cancel Event
+### 4.10 Cancel Event
 
 Transitions event status to `CANCELLED`. Requires event ownership or `ADMIN`.
 
@@ -568,7 +579,7 @@ Transitions event status to `CANCELLED`. Requires event ownership or `ADMIN`.
 - **Authentication:** Required
 - **Roles:** `ORGANIZER`, `ADMIN`
 
-### 4.10 Soft-Delete Event
+### 4.11 Soft-Delete Event
 
 Soft-deletes an event (`isDeleted: true`). Requires event ownership or `ADMIN`.
 
@@ -577,7 +588,7 @@ Soft-deletes an event (`isDeleted: true`). Requires event ownership or `ADMIN`.
 - **Authentication:** Required
 - **Roles:** `ORGANIZER`, `ADMIN`
 
-### 4.11 Restore Event
+### 4.12 Restore Event
 
 Restores a soft-deleted event (`isDeleted: false`). Requires event ownership or `ADMIN`.
 
