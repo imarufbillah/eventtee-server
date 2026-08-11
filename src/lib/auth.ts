@@ -6,13 +6,18 @@ import { prisma } from "../config/db.js";
 const isProduction = process.env["NODE_ENV"] === "production";
 
 export const auth = betterAuth({
+  baseURL: process.env["BETTER_AUTH_URL"],
+
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
+
   trustedOrigins: [process.env["CLIENT_URL"] as string],
+
   emailAndPassword: {
     enabled: true,
   },
+
   session: {
     expiresIn: 60 * 60 * 24 * 7,
     updateAge: 60 * 60 * 24,
@@ -22,17 +27,32 @@ export const auth = betterAuth({
       strategy: "jwt",
     },
   },
+
   advanced: {
-    crossSubdomainCookies: {
-      enabled: isProduction,
-    },
+    ...(isProduction
+      ? {
+          defaultCookieAttributes: {
+            sameSite: "none" as const,
+            secure: true,
+            httpOnly: true,
+          },
+        }
+      : {}),
+
     ipAddress: {
-      ipAddressHeaders: ["x-forwarded-for"],
-      trustedProxies: ["loopback", "linklocal", "uniquelocal"],
+      trustedProxies: [
+        "127.0.0.0/8",
+        "10.0.0.0/8",
+        "172.16.0.0/12",
+        "192.168.0.0/16",
+      ],
     },
+
     cookiePrefix: "eventtee",
   },
+
   plugins: [jwt()],
+
   user: {
     additionalFields: {
       role: {
@@ -48,6 +68,7 @@ export const auth = betterAuth({
       },
     },
   },
+
   databaseHooks: {
     user: {
       create: {
