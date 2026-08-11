@@ -3,6 +3,8 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { jwt } from "better-auth/plugins";
 import { prisma } from "../config/db.js";
 
+const isProduction = process.env["NODE_ENV"] === "production";
+
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
@@ -19,6 +21,16 @@ export const auth = betterAuth({
       maxAge: 60 * 60 * 24 * 7,
       strategy: "jwt",
     },
+  },
+  advanced: {
+    crossSubdomainCookies: {
+      enabled: isProduction,
+    },
+    ipAddress: {
+      ipAddressHeaders: ["x-forwarded-for"],
+      trustedProxies: ["loopback", "linklocal", "uniquelocal"],
+    },
+    cookiePrefix: "eventtee",
   },
   plugins: [jwt()],
   user: {
